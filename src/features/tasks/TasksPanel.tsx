@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFilters, type FiltersState } from "./TaskFilters";
@@ -13,6 +13,12 @@ import {
   type KanbanLane,
 } from "./status";
 import { URGENCY_META } from "./urgency";
+import {
+  buildSearch,
+  parsePanelState,
+  type Layout,
+  type View,
+} from "./url-state";
 import type { Task, TasksData } from "./types";
 
 const EMPTY_FILTERS: FiltersState = {
@@ -23,8 +29,6 @@ const EMPTY_FILTERS: FiltersState = {
 };
 /** Id sentinela para o chip "Não atribuído" no filtro de responsável. */
 const UNASSIGNED = "__unassigned__";
-
-type View = "tasks" | "epic";
 
 /** Peso lógico da urgência (Alta < Média < Baixa; sem urgência por último). */
 function urgencyRank(t: Task): number {
@@ -43,13 +47,33 @@ function compareBy(key: SortKey, a: Task, b: Task): number {
 }
 
 export function TasksPanel({ data }: { data: TasksData }) {
-  const [view, setView] = useState<View>("tasks");
-  const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS);
-  const [lane, setLane] = useState<KanbanLane | null>(null);
-  const [people, setPeople] = useState<Set<string>>(new Set());
-  const [showDone, setShowDone] = useState(false);
-  const [sort, setSort] = useState<SortState>(null);
-  const [layout, setLayout] = useState<"table" | "kanban">("table");
+  // Estado inicial vindo da URL (links compartilháveis).
+  const initial = useMemo(
+    () => parsePanelState(window.location.search),
+    [],
+  );
+  const [view, setView] = useState<View>(initial.view);
+  const [filters, setFilters] = useState<FiltersState>(initial.filters);
+  const [lane, setLane] = useState<KanbanLane | null>(initial.lane);
+  const [people, setPeople] = useState<Set<string>>(new Set(initial.people));
+  const [showDone, setShowDone] = useState(initial.showDone);
+  const [sort, setSort] = useState<SortState>(initial.sort);
+  const [layout, setLayout] = useState<Layout>(initial.layout);
+
+  // Reflete o estado atual na URL (replaceState — não polui o histórico).
+  useEffect(() => {
+    const search = buildSearch({
+      view,
+      layout,
+      filters,
+      lane,
+      people: [...people],
+      showDone,
+      sort,
+    });
+    const url = window.location.pathname + search + window.location.hash;
+    window.history.replaceState(null, "", url);
+  }, [view, layout, filters, lane, people, showDone, sort]);
 
   // Membros do time (definidos em sync/config.json), indexados por e-mail.
   const teamByEmail = useMemo(() => {
