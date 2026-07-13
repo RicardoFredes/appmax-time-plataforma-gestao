@@ -1,0 +1,337 @@
+<!-- Painel de Tarefas Jira — versão ao vivo (Google Sheets via Apps Script) — Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          paper: '#FAF9F5',
+          paper2: '#F1EEE6',
+          ink: '#22262B',
+          inksoft: '#5B6169',
+          line: '#DDD8CA',
+          accent: '#2F4B8F',
+          accentsoft: '#E7EBF6',
+          statusbacklog: '#8A7A5C',
+          statustodo: '#6B7280',
+          statusprogress: '#2B6CB0',
+          statusreview: '#7C4DBC',
+          statustesting: '#B7791F',
+          statusblocked: '#B23A48',
+          statusdone: '#2F855A',
+          statusother: '#9AA0A6',
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"IBM Plex Mono"', 'monospace'],
+          sans: ['Inter', '-apple-system', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<div id="jira-panel" class="font-sans text-ink bg-paper border border-line rounded-xl p-7 pb-5 max-w-full">
+
+  <div class="flex justify-between items-end flex-wrap gap-4 mb-4 border-b border-line pb-4">
+    <div>
+      <h1 class="font-display text-2xl font-bold m-0 mb-1 tracking-tight">Painel de Tarefas</h1>
+      <div class="text-[13px] text-inksoft font-mono">fonte: Google Sheets (ao vivo)</div>
+    </div>
+    <div class="flex gap-5">
+      <div class="text-right">
+        <div class="font-display text-2xl font-bold leading-none text-accent" id="jp-stat-total">–</div>
+        <div class="text-[11px] text-inksoft uppercase tracking-wide font-mono">tarefas</div>
+      </div>
+      <div class="text-right">
+        <div class="font-display text-2xl font-bold leading-none text-accent" id="jp-stat-people">–</div>
+        <div class="text-[11px] text-inksoft uppercase tracking-wide font-mono">pessoas</div>
+      </div>
+      <div class="text-right">
+        <div class="font-display text-2xl font-bold leading-none text-accent" id="jp-stat-boards">–</div>
+        <div class="text-[11px] text-inksoft uppercase tracking-wide font-mono">boards</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-2 items-center flex-wrap bg-paper2 border border-line rounded-lg py-3 px-3.5 mb-4">
+    <label class="text-[11px] text-inksoft uppercase tracking-wide font-mono">URL do App da Web</label>
+    <input type="text" id="jp-url"
+      class="flex-1 min-w-[220px] font-mono text-xs py-2 px-2.5 border border-line rounded-md bg-white focus:outline-none focus:border-accent"
+      placeholder="https://script.google.com/macros/s/SEU_ID/exec"
+      value="https://script.google.com/a/macros/appmax.com.br/s/AKfycbwwKE_QTqq1Ge1nFQLzdi46kqI3qoiiJ8aJBKbHowSYSbcq7TDwpfniOTzmjWrqhiSf4Q/exec">
+    <button id="jp-connect" class="font-sans text-sm font-medium py-2 px-4 rounded-md border border-accent bg-accent text-white hover:brightness-110">Carregar dados</button>
+    <span class="font-mono text-[11.5px] text-inksoft" id="jp-conn-status"></span>
+  </div>
+
+  <div class="hidden border border-statusblocked bg-red-50 text-statusblocked rounded-lg py-3.5 px-4 text-sm leading-relaxed mb-4" id="jp-error"></div>
+
+  <div id="jp-content" class="hidden">
+    <div class="flex h-[34px] rounded-md overflow-hidden mb-4 border border-line" id="jp-ticker"></div>
+
+    <div class="flex gap-2.5 flex-wrap mb-4 items-center">
+      <input type="text" id="jp-search"
+        class="flex-1 min-w-[180px] font-sans text-sm py-2 px-3 border border-line rounded-md bg-white focus:outline-none focus:border-accent"
+        placeholder="Buscar por título, board ou resumo...">
+      <select id="jp-board-select" class="font-sans text-sm py-2 px-3 border border-line rounded-md bg-white focus:outline-none focus:border-accent">
+        <option value="">Todos os boards</option>
+      </select>
+      <select id="jp-status-select" class="font-sans text-sm py-2 px-3 border border-line rounded-md bg-white focus:outline-none focus:border-accent">
+        <option value="">Todos os status</option>
+      </select>
+      <span id="jp-reset" class="font-mono text-[11.5px] py-1.5 px-2.5 rounded-full border border-line bg-paper2 cursor-pointer text-inksoft hover:text-ink select-none">✕ limpar filtros</span>
+      <button id="jp-refresh" class="ml-auto font-sans text-sm font-medium py-2 px-4 rounded-md border border-accent bg-accent text-white hover:brightness-110">↻ atualizar</button>
+    </div>
+
+    <div class="flex gap-1.5 flex-wrap mb-4" id="jp-people"></div>
+    <div class="font-mono text-xs text-inksoft mb-2" id="jp-count"></div>
+
+    <div class="border border-line rounded-lg overflow-hidden">
+      <table class="w-full border-collapse text-[13px] bg-white">
+        <thead>
+          <tr>
+            <th class="text-left font-mono text-[10.5px] uppercase tracking-wide text-inksoft bg-paper2 py-2.5 px-3 border-b border-line">Nome</th>
+            <th class="text-left font-mono text-[10.5px] uppercase tracking-wide text-inksoft bg-paper2 py-2.5 px-3 border-b border-line">Board</th>
+            <th class="text-left font-mono text-[10.5px] uppercase tracking-wide text-inksoft bg-paper2 py-2.5 px-3 border-b border-line">Tarefa</th>
+            <th class="text-left font-mono text-[10.5px] uppercase tracking-wide text-inksoft bg-paper2 py-2.5 px-3 border-b border-line">Resumo</th>
+            <th class="text-left font-mono text-[10.5px] uppercase tracking-wide text-inksoft bg-paper2 py-2.5 px-3 border-b border-line">Status</th>
+          </tr>
+        </thead>
+        <tbody id="jp-tbody"></tbody>
+      </table>
+      <div class="hidden py-10 text-center text-inksoft font-mono text-sm" id="jp-empty">Nenhuma tarefa encontrada com esses filtros.</div>
+    </div>
+  </div>
+
+  <div class="hidden py-10 text-center text-inksoft font-mono text-sm" id="jp-loading">Carregando dados da planilha...</div>
+</div>
+
+<script>
+(function() {
+  let DATA = [];
+  const state = { search: '', board: '', status: '', people: new Set(), catFilter: null };
+
+  const COL = {
+    nome: 'nome', email: 'email', board: 'nome do board',
+    titulo: 'titulo da task', resumo: 'resumo curto da task',
+    link: 'link do jira', status: 'status'
+  };
+
+  const statusColors = {
+    'Backlog': '#8A7A5C', 'A fazer': '#6B7280', 'Em progresso': '#2B6CB0',
+    'Em revisão': '#7C4DBC', 'Em teste': '#B7791F', 'Bloqueado': '#B23A48',
+    'Concluído': '#2F855A', 'Outro': '#9AA0A6'
+  };
+
+  const statusMeta = (raw) => {
+    const s = (raw || '').toString().toLowerCase();
+    if (/done|conclu|finaliz/.test(s)) return { cat: 'Concluído', color: statusColors['Concluído'] };
+    if (/review|revis/.test(s)) return { cat: 'Em revisão', color: statusColors['Em revisão'] };
+    if (/test|valida/.test(s)) return { cat: 'Em teste', color: statusColors['Em teste'] };
+    if (/progress|execu|desenvolv|building|code review/.test(s)) return { cat: 'Em progresso', color: statusColors['Em progresso'] };
+    if (/bloque|block/.test(s)) return { cat: 'Bloqueado', color: statusColors['Bloqueado'] };
+    if (/backlog/.test(s)) return { cat: 'Backlog', color: statusColors['Backlog'] };
+    if (/to do|a fazer|abert|planej|defini|selected/.test(s)) return { cat: 'A fazer', color: statusColors['A fazer'] };
+    return { cat: 'Outro', color: statusColors['Outro'] };
+  };
+
+  function escapeHtml(s) {
+    return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  const urlInput = document.getElementById('jp-url');
+  const statusEl = document.getElementById('jp-conn-status');
+  const errorBox = document.getElementById('jp-error');
+  const loadingEl = document.getElementById('jp-loading');
+  const contentEl = document.getElementById('jp-content');
+
+  function showError(msg) {
+    errorBox.classList.remove('hidden');
+    errorBox.innerHTML = msg;
+    contentEl.classList.add('hidden');
+    loadingEl.classList.add('hidden');
+  }
+
+  function loadData() {
+    const url = urlInput.value.trim();
+    if (!url) { showError('Cole a URL do App da Web do Apps Script acima e clique em "Carregar dados".'); return; }
+
+    errorBox.classList.add('hidden');
+    contentEl.classList.add('hidden');
+    loadingEl.classList.remove('hidden');
+    statusEl.textContent = 'conectando...';
+    statusEl.className = 'font-mono text-[11.5px] text-inksoft';
+
+    const oldScript = document.getElementById('jp-jsonp-script');
+    if (oldScript) oldScript.remove();
+
+    const callbackName = 'jpCallback_' + Date.now();
+    let settled = false;
+
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      delete window[callbackName];
+      statusEl.textContent = '✗ falha na conexão';
+      statusEl.className = 'font-mono text-[11.5px] text-statusblocked';
+      showError(
+        'Não recebi resposta do Apps Script a tempo. Causas mais comuns:<br>' +
+        '&nbsp;&nbsp;• A URL não termina em <code class="bg-black/5 px-1 rounded">/exec</code> ou foi copiada errada<br>' +
+        '&nbsp;&nbsp;• Você não está logado com a conta @appmax.com.br neste navegador<br>' +
+        '&nbsp;&nbsp;• O Apps Script ainda não foi atualizado com o suporte a <code class="bg-black/5 px-1 rounded">callback</code><br>' +
+        '&nbsp;&nbsp;• A implantação precisa de uma nova versão (Gerenciar implantações → editar → nova versão)'
+      );
+    }, 15000);
+
+    window[callbackName] = function(json) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      delete window[callbackName];
+      if (!Array.isArray(json)) {
+        statusEl.textContent = '✗ formato inesperado';
+        statusEl.className = 'font-mono text-[11.5px] text-statusblocked';
+        showError('O Apps Script respondeu, mas não no formato esperado (lista de linhas).');
+        return;
+      }
+      DATA = json;
+      statusEl.textContent = '✓ conectado · ' + DATA.length + ' linhas';
+      statusEl.className = 'font-mono text-[11.5px] text-statusdone';
+      loadingEl.classList.add('hidden');
+      contentEl.classList.remove('hidden');
+      buildUI();
+    };
+
+    const sep = url.includes('?') ? '&' : '?';
+    const script = document.createElement('script');
+    script.id = 'jp-jsonp-script';
+    script.src = url + sep + 'callback=' + callbackName;
+    script.onerror = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      delete window[callbackName];
+      statusEl.textContent = '✗ falha na conexão';
+      statusEl.className = 'font-mono text-[11.5px] text-statusblocked';
+      showError('Não consegui carregar o script do Apps Script. Confira se a URL está correta e se a implantação está ativa.');
+    };
+    document.body.appendChild(script);
+  }
+
+  document.getElementById('jp-connect').addEventListener('click', loadData);
+  document.getElementById('jp-refresh').addEventListener('click', loadData);
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadData(); });
+
+  if (urlInput.value.trim()) loadData();
+
+  function buildUI() {
+    state.search = ''; state.board = ''; state.status = ''; state.people.clear(); state.catFilter = null;
+    document.getElementById('jp-search').value = '';
+
+    const people = [...new Set(DATA.map(d => d[COL.nome]))].filter(Boolean).sort();
+    const boards = [...new Set(DATA.map(d => d[COL.board]))].filter(Boolean).sort();
+    const statuses = [...new Set(DATA.map(d => d[COL.status]))].filter(Boolean).sort();
+
+    document.getElementById('jp-stat-total').textContent = DATA.length;
+    document.getElementById('jp-stat-people').textContent = people.length;
+    document.getElementById('jp-stat-boards').textContent = boards.length;
+
+    const boardSel = document.getElementById('jp-board-select');
+    boardSel.innerHTML = '<option value="">Todos os boards</option>';
+    boards.forEach(b => { const o = document.createElement('option'); o.value = b; o.textContent = b; boardSel.appendChild(o); });
+
+    const statusSel = document.getElementById('jp-status-select');
+    statusSel.innerHTML = '<option value="">Todos os status</option>';
+    statuses.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; statusSel.appendChild(o); });
+    boardSel.onchange = e => { state.board = e.target.value; render(); };
+    statusSel.onchange = e => { state.status = e.target.value; render(); };
+
+    const peopleWrap = document.getElementById('jp-people');
+    peopleWrap.innerHTML = '';
+    const chipInactive = 'font-mono text-[11.5px] py-1.5 px-2.5 rounded-full border border-line bg-white cursor-pointer text-inksoft select-none';
+    const chipActive = 'font-mono text-[11.5px] py-1.5 px-2.5 rounded-full border border-accent bg-accent cursor-pointer text-white select-none';
+    people.forEach(p => {
+      const chip = document.createElement('span');
+      chip.className = chipInactive;
+      const firstName = p.toString().split(' ')[0];
+      chip.textContent = firstName + ' (' + DATA.filter(d => d[COL.nome] === p).length + ')';
+      chip.title = p;
+      chip.onclick = () => {
+        if (state.people.has(p)) { state.people.delete(p); chip.className = chipInactive; }
+        else { state.people.add(p); chip.className = chipActive; }
+        render();
+      };
+      peopleWrap.appendChild(chip);
+    });
+
+    const catOrder = ['Backlog', 'A fazer', 'Em progresso', 'Em revisão', 'Em teste', 'Bloqueado', 'Concluído', 'Outro'];
+    const catCounts = {};
+    DATA.forEach(d => { const m = statusMeta(d[COL.status]); catCounts[m.cat] = (catCounts[m.cat] || 0) + 1; });
+    const ticker = document.getElementById('jp-ticker');
+    ticker.innerHTML = '';
+    catOrder.filter(c => catCounts[c]).forEach(cat => {
+      const color = statusColors[cat];
+      const seg = document.createElement('div');
+      seg.className = 'cursor-pointer flex items-center justify-center font-mono text-[11px] text-white min-w-[8px] whitespace-nowrap overflow-hidden transition hover:brightness-110';
+      seg.style.background = color;
+      seg.style.flex = catCounts[cat];
+      seg.innerHTML = '<span class="px-2">' + cat + ' · ' + catCounts[cat] + '</span>';
+      seg._cat = cat;
+      seg.onclick = () => { state.catFilter = state.catFilter === cat ? null : cat; render(); };
+      ticker.appendChild(seg);
+    });
+
+    document.getElementById('jp-search').oninput = e => { state.search = e.target.value.toLowerCase(); render(); };
+    document.getElementById('jp-reset').onclick = () => {
+      state.search = ''; state.board = ''; state.status = ''; state.people.clear(); state.catFilter = null;
+      document.getElementById('jp-search').value = '';
+      boardSel.value = ''; statusSel.value = '';
+      document.querySelectorAll('#jp-people span').forEach(c => { c.className = chipInactive; });
+      render();
+    };
+
+    render();
+  }
+
+  function render() {
+    const tbody = document.getElementById('jp-tbody');
+    tbody.innerHTML = '';
+
+    const rows = DATA.filter(d => {
+      if (state.board && d[COL.board] !== state.board) return false;
+      if (state.status && d[COL.status] !== state.status) return false;
+      if (state.people.size && !state.people.has(d[COL.nome])) return false;
+      if (state.catFilter && statusMeta(d[COL.status]).cat !== state.catFilter) return false;
+      if (state.search) {
+        const hay = [d[COL.titulo], d[COL.board], d[COL.resumo], d[COL.nome]].join(' ').toLowerCase();
+        if (!hay.includes(state.search)) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('jp-count').textContent = rows.length + ' de ' + DATA.length + ' tarefas';
+    document.getElementById('jp-empty').classList.toggle('hidden', rows.length > 0);
+    document.querySelectorAll('#jp-ticker > div').forEach(seg => {
+      seg.style.opacity = (state.catFilter && seg._cat !== state.catFilter) ? '0.25' : '1';
+    });
+
+    const frag = document.createDocumentFragment();
+    rows.forEach(d => {
+      const meta = statusMeta(d[COL.status]);
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-line last:border-b-0 hover:bg-neutral-50';
+      tr.innerHTML =
+        '<td class="py-2.5 px-3 align-top whitespace-nowrap font-medium">' + escapeHtml(d[COL.nome]) + '</td>' +
+        '<td class="py-2.5 px-3 align-top whitespace-nowrap font-mono text-xs text-inksoft">' + escapeHtml(d[COL.board]) + '</td>' +
+        '<td class="py-2.5 px-3 align-top max-w-[260px] font-medium"><a class="text-ink no-underline border-b border-line hover:text-accent hover:border-accent" href="' + escapeHtml(d[COL.link]) + '" target="_blank" rel="noopener">' + escapeHtml(d[COL.titulo]) + '</a></td>' +
+        '<td class="py-2.5 px-3 align-top max-w-[320px] text-inksoft text-[12.5px] leading-snug">' + escapeHtml(d[COL.resumo]) + '</td>' +
+        '<td class="py-2.5 px-3 align-top"><span class="inline-block font-mono text-[11px] py-0.5 px-2 rounded text-white whitespace-nowrap" style="background:' + meta.color + '">' + escapeHtml(d[COL.status]) + '</span></td>';
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+  }
+})();
+</script>

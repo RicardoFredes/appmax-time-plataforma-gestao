@@ -1,0 +1,24 @@
+{
+  "$doc": "Configuração do sync. Edite as listas abaixo e rode `pnpm sync`. baseUrl/credenciais ficam no .env.",
+  "options": {
+    "includeDone": false,
+    "maxResultsPerQuery": 100,
+    "doneWithinDays": 21
+  },
+  "users": [
+    { "email": "ricardo.silveira@appmax.com.br", "name": "Ricardo Silveira" },
+    { "email": "bruno.schneider@appmax.com.br", "name": "Bruno Schneider" },
+    { "email": "diogo.januario@appmax.com.br", "name": "Diogo Januário" },
+    { "email": "felipe.carvalho@appmax.com.br", "name": "Felipe Carvalho" },
+    { "email": "ian.oliveira@appmax.com.br", "name": "Ian Oliveira" },
+    { "email": "jardiano.almeida@appmax.com.br", "name": "Jardiano Almeida" },
+    { "email": "joao.justo@appmax.com.br", "name": "João Justo" },
+    { "email": "jose.chagury@appmax.com.br", "name": "José Chagury" },
+    { "email": "witerlland.silva@appmax.com.br", "name": "Witerlland Silva" }
+  ],
+  "epics": [
+    "SUS-4815",
+    "SUS-1336",
+    "SUS-4623"
+  ]
+}

@@ -1,0 +1,19 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# Segredos do sync
+.env
+
+# Banco local e dados gerados (regenerados via `pnpm sync`)
+data/*.db
+data/*.db-*
+public/data/*.json
+
+# TS build info
+node_modules/.tmp
+
+# Wrangler / Cloudflare
+.wrangler
+!public/data/.gitkeep

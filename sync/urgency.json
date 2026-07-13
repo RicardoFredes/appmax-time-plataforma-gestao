@@ -1,0 +1,27 @@
+{
+  "$doc": "Urgência avaliada manualmente por tarefa (key -> alta|media|baixa). Mesclado no export e preservado entre syncs.",
+  "urgency": {
+    "SUS-5205": "alta",
+    "SUS-4609": "alta",
+    "SUS-5131": "alta",
+    "SUS-5096": "alta",
+    "SUS-4779": "alta",
+    "SUS-5082": "alta",
+    "SUS-5163": "alta",
+    "SUS-4907": "alta",
+    "SUS-5212": "alta",
+    "SUS-5093": "media",
+    "SUS-5211": "media",
+    "SUS-5128": "media",
+    "SUS-4959": "media",
+    "SUS-4931": "media",
+    "SUS-4853": "media",
+    "SUS-5130": "baixa",
+    "SUS-5006": "baixa",
+    "SUS-4871": "baixa",
+    "SUS-4723": "baixa",
+    "SUS-4933": "baixa",
+    "SUS-4934": "baixa",
+    "SUS-1371": "baixa"
+  }
+}
