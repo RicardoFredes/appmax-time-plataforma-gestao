@@ -3,7 +3,8 @@
   "options": {
     "includeDone": false,
     "maxResultsPerQuery": 100,
-    "doneWithinDays": 21
+    "doneWithinDays": 21,
+    "createdFrom": "2026-01-01"
   },
   "users": [
     { "email": "ricardo.silveira@appmax.com.br", "name": "Ricardo Silveira" },
@@ -11,7 +12,6 @@
     { "email": "diogo.januario@appmax.com.br", "name": "Diogo Januário" },
     { "email": "felipe.carvalho@appmax.com.br", "name": "Felipe Carvalho" },
     { "email": "ian.oliveira@appmax.com.br", "name": "Ian Oliveira" },
-    { "email": "jardiano.almeida@appmax.com.br", "name": "Jardiano Almeida" },
     { "email": "joao.justo@appmax.com.br", "name": "João Justo" },
     { "email": "jose.chagury@appmax.com.br", "name": "José Chagury" },
     { "email": "witerlland.silva@appmax.com.br", "name": "Witerlland Silva" }

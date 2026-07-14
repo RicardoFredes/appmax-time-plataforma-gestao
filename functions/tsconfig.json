@@ -1,0 +1,20 @@
+{
+  // Typecheck isolado da Pages Function (`pnpm typecheck:functions`).
+  // Fora do `tsc -b` principal para não misturar libs (Workers vs. DOM/Node).
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    // `node` para o Buffer usado em sync/jira.ts (via nodejs_compat em runtime).
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["**/*.ts", "../sync/**/*.ts"]
+}

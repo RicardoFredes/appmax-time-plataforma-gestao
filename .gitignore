@@ -5,6 +5,8 @@ dist
 
 # Segredos do sync
 .env
+# Segredos locais da Pages Function (wrangler pages dev)
+.dev.vars
 
 # Banco local e dados gerados (regenerados via `pnpm sync`)
 data/*.db

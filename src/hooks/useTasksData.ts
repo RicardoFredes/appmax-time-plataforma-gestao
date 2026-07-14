@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TasksData } from "@/features/tasks/types";
 
 type State =
@@ -6,31 +6,63 @@ type State =
   | { status: "error"; error: string }
   | { status: "ready"; data: TasksData };
 
-/** Carrega o arquivo gerado pelo sync (`public/data/tasks.json`). */
+/**
+ * Carrega os dados das tarefas. Em produção lê a Pages Function `/api/tasks`
+ * (cache dinâmico em KV, atualizado a partir do Jira). Se ela não existir
+ * (ex.: `pnpm dev` puro, sem Wrangler), cai no arquivo estático gerado pelo
+ * `pnpm sync` (`public/data/tasks.json`). Refaz o fetch quando a aba volta ao
+ * foco, para refletir a revalidação em background.
+ */
+async function loadTasksData(): Promise<TasksData> {
+  const bust = `?t=${Date.now()}`;
+  try {
+    const res = await fetch(`/api/tasks${bust}`);
+    if (res.ok) return (await res.json()) as TasksData;
+  } catch {
+    // rede/endpoint indisponível -> tenta o arquivo estático abaixo.
+  }
+  const res = await fetch(`${import.meta.env.BASE_URL}data/tasks.json${bust}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as TasksData;
+}
+
 export function useTasksData(): State {
   const [state, setState] = useState<State>({ status: "loading" });
+  const activeRef = useRef(true);
 
-  useEffect(() => {
-    let active = true;
-    fetch(`${import.meta.env.BASE_URL}data/tasks.json?t=${Date.now()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<TasksData>;
-      })
+  const load = useCallback(() => {
+    loadTasksData()
       .then((data) => {
-        if (active) setState({ status: "ready", data });
+        if (activeRef.current) setState({ status: "ready", data });
       })
       .catch((err: unknown) => {
-        if (active)
-          setState({
-            status: "error",
-            error: err instanceof Error ? err.message : String(err),
-          });
+        if (activeRef.current)
+          // Mantém dados já carregados em caso de falha de refetch.
+          setState((prev) =>
+            prev.status === "ready"
+              ? prev
+              : {
+                  status: "error",
+                  error: err instanceof Error ? err.message : String(err),
+                },
+          );
       });
-    return () => {
-      active = false;
-    };
   }, []);
+
+  useEffect(() => {
+    activeRef.current = true;
+    load();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      activeRef.current = false;
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load]);
 
   return state;
 }

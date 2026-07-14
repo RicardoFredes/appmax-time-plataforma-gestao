@@ -45,7 +45,7 @@ function Header({ data }: { data: TasksData }) {
         </div>
         <div className="grid grid-cols-4 gap-2">
           <Stat label="Tarefas" value={data.tasks.length} />
-          <Stat label="Sem responsável" value={unassigned} />
+          <Stat label="Sem dono" value={unassigned} />
           <Stat label="Boards" value={data.boards.length} />
           <Stat label="Épicos" value={data.epics.length} />
         </div>

@@ -1,0 +1,6 @@
+# Copie para `.dev.vars` (gitignored) para rodar a Pages Function localmente
+# com `pnpm dev:cf` (wrangler pages dev). Em produção, o token vai como secret:
+#   wrangler pages secret put JIRA_API_TOKEN
+JIRA_BASE_URL=https://tecnologia-appmax.atlassian.net
+JIRA_EMAIL=ricardo.silveira@appmax.com.br
+JIRA_API_TOKEN=

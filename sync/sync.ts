@@ -17,6 +17,7 @@ import {
   readAllTasks,
 } from "./db.ts";
 import { applyUrgency } from "./apply-urgency.ts";
+import { scopeClause } from "./core.ts";
 import type { SyncConfig, TasksData, TrackedEpic } from "./types.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -46,16 +47,11 @@ function loadConfig(): SyncConfig {
       includeDone: raw.options?.includeDone ?? false,
       maxResultsPerQuery: raw.options?.maxResultsPerQuery ?? 100,
       doneWithinDays: raw.options?.doneWithinDays ?? 21,
+      createdFrom: raw.options?.createdFrom ?? "",
     },
     users: raw.users ?? [],
     epics: raw.epics ?? [],
   };
-}
-
-function statusClause(cfg: SyncConfig): string {
-  return cfg.options.includeDone
-    ? `(statusCategory != Done OR updated >= -${cfg.options.doneWithinDays}d)`
-    : "statusCategory != Done";
 }
 
 function exportJson(cfg: SyncConfig, epics: TrackedEpic[], generatedAt: string) {
@@ -109,7 +105,7 @@ async function runSync(): Promise<void> {
   // 1) Tarefas atribuídas aos usuários acompanhados.
   if (cfg.users.length > 0) {
     const emails = cfg.users.map((u) => `"${u.email}"`).join(",");
-    const jql = `assignee in (${emails}) AND ${statusClause(cfg)} ORDER BY updated DESC`;
+    const jql = `assignee in (${emails}) AND ${scopeClause(cfg)} ORDER BY updated DESC`;
     console.log(`→ Buscando tarefas atribuídas (${cfg.users.length} usuários)...`);
     const issues = await jira.searchAll(jql, cfg.options.maxResultsPerQuery);
     for (const issue of issues) {
@@ -121,7 +117,7 @@ async function runSync(): Promise<void> {
   // 2) Tarefas dos épicos listados (board de épicos).
   if (cfg.epics.length > 0) {
     const keys = cfg.epics.join(",");
-    const jql = `parent in (${keys}) AND ${statusClause(cfg)} ORDER BY updated DESC`;
+    const jql = `parent in (${keys}) AND ${scopeClause(cfg)} ORDER BY updated DESC`;
     console.log(`→ Buscando tarefas de ${cfg.epics.length} épico(s)...`);
     const issues = await jira.searchAll(jql, cfg.options.maxResultsPerQuery);
     for (const issue of issues) {

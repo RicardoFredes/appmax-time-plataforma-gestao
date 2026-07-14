@@ -53,6 +53,8 @@ export interface SyncConfig {
     includeDone: boolean;
     maxResultsPerQuery: number;
     doneWithinDays: number;
+    /** Só traz tarefas criadas a partir desta data (YYYY-MM-DD). "" = sem corte. */
+    createdFrom: string;
   };
   users: TrackedUser[];
   epics: string[];

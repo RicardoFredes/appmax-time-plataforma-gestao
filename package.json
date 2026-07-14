@@ -9,8 +9,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
+    "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
     "sync": "tsx sync/sync.ts",
     "sync:export": "tsx sync/sync.ts --export-only",
+    "dev:cf": "pnpm run build && wrangler pages dev",
     "deploy": "pnpm run build && wrangler pages deploy",
     "deploy:create": "wrangler pages project create appmax-time-plataforma-tarefas --production-branch main"
   },
@@ -28,6 +30,7 @@
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.9.0",
@@ -42,6 +45,8 @@
     "wrangler": "^4.110.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["better-sqlite3"]
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }

@@ -2,5 +2,20 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "appmax-time-plataforma-tarefas",
   "compatibility_date": "2026-07-01",
-  "pages_build_output_dir": "./dist"
+  // `nodejs_compat` habilita o `Buffer` usado no Basic Auth do Jira (sync/jira.ts).
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "./dist",
+  // Variáveis não-secretas da Pages Function `/api/tasks`.
+  // O JIRA_API_TOKEN é secret: `wrangler pages secret put JIRA_API_TOKEN`.
+  "vars": {
+    "JIRA_BASE_URL": "https://tecnologia-appmax.atlassian.net",
+    "JIRA_EMAIL": "ricardo.silveira@appmax.com.br"
+  },
+  // Cache do /api/tasks. Namespace criado via `wrangler kv namespace create TASKS_KV`.
+  "kv_namespaces": [
+    {
+      "binding": "TASKS_KV",
+      "id": "0fc47809e8394a29a04765572c681689"
+    }
+  ]
 }
