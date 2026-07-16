@@ -42,11 +42,14 @@ gente autenticada vê o painel. Duas camadas garantem isso:
    `dist/_headers` no build) — o navegador só deixa embutir o painel a partir dos origins
    listados. É o controle real (não burlável no cliente).
 2. **Guarda no boot da SPA** (`src/lib/embed.ts`, usada em `App.tsx`) — se a página for
-   aberta **fora de um iframe** (top-level, direto no `*.pages.dev`), mostra "Acesse pelo
-   Backoffice" em vez do painel. Em `pnpm dev` a guarda é desligada.
+   aberta **fora de um iframe** (top-level, direto no `*.pages.dev`), **redireciona** a
+   janela de topo para a rota do painel no backoffice (`BACKOFFICE_PANEL_URL`), mostrando
+   "Redirecionando…". Assim o fluxo se fecha: o acesso direto cai na página do backoffice
+   que embute o painel. Em `pnpm dev` a guarda é desligada.
 
 A allowlist de origins vive em **dois lugares em sincronia**: `frame-ancestors` no
-`public/_headers` e `ALLOWED_ANCESTORS` em `src/lib/embed.ts`.
+`public/_headers` e `ALLOWED_ANCESTORS` em `src/lib/embed.ts`. A rota de destino do
+redirect fica em `BACKOFFICE_PANEL_URL` (mesmo arquivo).
 
 Snippet do lado do backoffice (adaptar à estrutura de módulos/cabines de lá):
 

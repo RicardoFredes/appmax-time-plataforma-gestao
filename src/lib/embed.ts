@@ -13,6 +13,14 @@ export const ALLOWED_ANCESTORS = [
   "https://homolog-backoffice.appmax.com.br",
 ];
 
+/**
+ * Rota do painel dentro do backoffice, para onde o acesso direto (top-level) é
+ * redirecionado — fechando o fluxo: quem abre a URL solta cai na página do
+ * backoffice que embute o painel (e já resolve a autenticação de lá).
+ */
+// TODO: confirmar a rota real do Time Plataforma no backoffice.
+export const BACKOFFICE_PANEL_URL = "https://backoffice.appmax.com.br/time-plataforma";
+
 export type EmbedStatus = "ok" | "standalone" | "forbidden-ancestor";
 
 /** Decide se o painel pode renderizar no contexto atual. */

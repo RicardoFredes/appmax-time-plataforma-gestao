@@ -55,9 +55,9 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   (`! pnpm exec wrangler pages deploy`).
 - **Embed-only**: o painel só renderiza dentro do iframe do backoffice autenticado. Duas
   camadas: header `frame-ancestors` (`public/_headers`) + guarda no boot (`src/lib/embed.ts`,
-  bloqueia uso top-level; desligada em dev). A allowlist de origins vive nos **dois** em
-  sincronia. Isso protege a UI, **não** o `/api/tasks` (JSON ainda acessível direto). Ver
-  [deploy.md](docs/deploy.md).
+  que **redireciona** uso top-level para `BACKOFFICE_PANEL_URL`; desligada em dev). A
+  allowlist de origins vive nos **dois** (header + embed.ts) em sincronia. Isso protege a
+  UI, **não** o `/api/tasks` (JSON ainda acessível direto). Ver [deploy.md](docs/deploy.md).
 - Tema **Appmax** (roxo `#9b6afa`) em `src/styles/globals.css`; logo em
   `src/components/logo.tsx` (copiados de `appmax-app-frontend`).
 - Ao passar `"$VAR:sufixo"` no zsh, escape com `"${VAR}:sufixo"` (`:a` é modificador).

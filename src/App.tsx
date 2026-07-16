@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
-import { checkEmbed } from "@/lib/embed";
+import { BACKOFFICE_PANEL_URL, checkEmbed } from "@/lib/embed";
 import type { TasksData } from "@/features/tasks/types";
 
 type Page = "tarefas" | "sustentacao" | "ferias";
@@ -124,24 +124,35 @@ function ErrorState({ error }: { error: string }) {
   );
 }
 
-/** Tela exibida quando o painel é aberto fora do backoffice (sem iframe permitido). */
-function EmbedBlocked() {
+/**
+ * Exibida quando o painel é aberto fora do iframe do backoffice: redireciona
+ * para a rota do painel no backoffice (top-level) e mostra "Redirecionando…".
+ */
+function EmbedRedirect() {
+  useEffect(() => {
+    // Navega a janela de topo (em uso direto, top === self).
+    const target = window.top ?? window;
+    try {
+      target.location.replace(BACKOFFICE_PANEL_URL);
+    } catch {
+      window.location.replace(BACKOFFICE_PANEL_URL);
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="max-w-md space-y-4 text-center">
         <Logo variant="mark" className="mx-auto h-9" />
-        <h1 className="text-lg font-semibold tracking-tight">
-          Acesse pelo Backoffice
-        </h1>
+        <h1 className="text-lg font-semibold tracking-tight">Redirecionando…</h1>
         <p className="text-sm text-muted-foreground">
-          Este painel só abre dentro do Backoffice Appmax. Entre em{" "}
+          Levando você para o painel no Backoffice Appmax. Se nada acontecer,{" "}
           <a
             className="text-primary underline underline-offset-2"
-            href="https://backoffice.appmax.com.br"
+            href={BACKOFFICE_PANEL_URL}
           >
-            backoffice.appmax.com.br
-          </a>{" "}
-          e acesse pelo menu.
+            clique aqui
+          </a>
+          .
         </p>
       </div>
     </div>
@@ -152,7 +163,7 @@ export function App() {
   const state = useTasksData();
   const [page, navigate] = usePage();
 
-  if (checkEmbed() !== "ok") return <EmbedBlocked />;
+  if (checkEmbed() !== "ok") return <EmbedRedirect />;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
