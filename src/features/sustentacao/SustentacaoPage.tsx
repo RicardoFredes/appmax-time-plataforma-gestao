@@ -5,6 +5,7 @@ import { CalendarDays, Palmtree, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { firstName, initials } from "@/lib/people";
 import type { SustentacaoData } from "@/features/tasks/types";
 import {
   scheduleForAll,
@@ -14,17 +15,6 @@ import {
 
 /** Paleta por grupo (cor da faixa/realce). */
 const GROUP_ACCENT = ["#9b6afa", "#0ea5e9"]; // roxo Appmax, sky
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-}
-
-function firstName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name;
-}
 
 function fmtRange(start: Date, end: Date): string {
   const sameMonth = start.getMonth() === end.getMonth();
@@ -194,32 +184,6 @@ function GroupCard({
   );
 }
 
-function VacationList({ ferias }: { ferias: SustentacaoData["ferias"] }) {
-  if (ferias.length === 0) return null;
-  return (
-    <Card className="p-5">
-      <div className="mb-3 flex items-center gap-2">
-        <Palmtree className="h-4 w-4 text-amber-500" />
-        <h2 className="text-sm font-semibold tracking-tight">Férias e ausências</h2>
-      </div>
-      <ul className="space-y-1.5">
-        {ferias.map((v) => (
-          <li
-            key={`${v.email}-${v.inicio}`}
-            className="flex items-center justify-between gap-3 text-sm"
-          >
-            <span className="font-medium">{v.name}</span>
-            <span className="text-muted-foreground">
-              {format(new Date(v.inicio + "T00:00:00"), "dd/MM/yyyy")} –{" "}
-              {format(new Date(v.fim + "T00:00:00"), "dd/MM/yyyy")}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
-
 export function SustentacaoPage({ data }: { data: SustentacaoData | undefined }) {
   // `now` fixo no render; a página é recarregada quando a aba volta ao foco.
   const groups = useMemo(
@@ -259,8 +223,6 @@ export function SustentacaoPage({ data }: { data: SustentacaoData | undefined })
           />
         ))}
       </div>
-
-      <VacationList ferias={data.ferias} />
     </div>
   );
 }

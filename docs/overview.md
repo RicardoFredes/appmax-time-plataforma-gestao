@@ -59,6 +59,7 @@ src/                  # frontend (React) — ver docs/frontend.md
   components/ui/       # shadcn/ui copiado do backoffice
   features/tasks/      # painel, filtros, urgência, sort, status
   features/sustentacao/ # escala de plantão (página + cálculo do rodízio)
+  features/ferias/     # página de férias/ausências (linha do tempo + lista)
   hooks/useTasksData.ts
 sync/vacations.json   # férias/ausências que afetam a escala
 public/data/          # tasks.json gerado (gitignored)

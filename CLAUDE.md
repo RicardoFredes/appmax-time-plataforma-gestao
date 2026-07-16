@@ -4,8 +4,9 @@ Painel local (uso pessoal) que lista tarefas do Jira `tecnologia-appmax` **do me
 time** e **dos épicos acompanhados**, com filtros, urgência e ordenação. Em produção
 o frontend lê a Pages Function `/api/tasks` (busca no Jira, cache em KV, SWR); em `pnpm
 dev` puro cai no fallback estático `public/data/tasks.json` gerado por `pnpm sync`.
-Tem também uma aba **Sustentação**: escala semanal de plantão por grupo (rodízio de 2
-semanas por engenheiro, com cobertura de férias), derivada do `config.json`.
+Tem também as abas **Sustentação** (escala semanal de plantão por grupo — rodízio de 2
+semanas por engenheiro, com cobertura de férias, derivada do `config.json`) e **Férias**
+(linha do tempo e lista das ausências de `sync/vacations.json`).
 
 ## Stack
 React 18 + Vite 5 + TS · Tailwind **v4** (`@tailwindcss/vite`, tema em
@@ -29,8 +30,10 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   `StatusTicker`, `TasksTable` (sort), `status.ts`, `urgency.ts`, `types.ts`.
 - `src/features/sustentacao/` — `SustentacaoPage` (UI da escala) e `schedule.ts` (cálculo
   puro do rodízio + cobertura de férias; a semana corrente vem do relógio do cliente).
+- `src/features/ferias/` — `FeriasPage` (linha do tempo + lista das ausências por status,
+  lê `data.sustentacao.ferias`). Helpers de nome/avatar em `src/lib/people.ts`.
 - `src/components/ui/` — shadcn copiado do backoffice. `src/App.tsx` — nav por hash
-  (`#/sustentacao`) entre as abas Tarefas/Sustentação; header/métricas da aba Tarefas.
+  (`#/sustentacao`, `#/ferias`) entre as abas Tarefas/Sustentação/Férias; header da aba Tarefas.
 - Gerado e gitignored: `public/data/tasks.json` (regenere com `pnpm sync`).
 
 ## Convenções e gotchas

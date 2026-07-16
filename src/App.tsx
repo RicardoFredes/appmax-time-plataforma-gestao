@@ -8,16 +8,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
+import { FeriasPage } from "@/features/ferias/FeriasPage";
 import type { TasksData } from "@/features/tasks/types";
 
-type Page = "tarefas" | "sustentacao";
+type Page = "tarefas" | "sustentacao" | "ferias";
 
 /** Página atual a partir do hash da URL (linkável, sobrevive ao reload). */
 function usePage(): [Page, (p: Page) => void] {
-  const read = (): Page =>
-    window.location.hash.replace(/^#\/?/, "") === "sustentacao"
-      ? "sustentacao"
-      : "tarefas";
+  const read = (): Page => {
+    const h = window.location.hash.replace(/^#\/?/, "");
+    return h === "sustentacao" || h === "ferias" ? h : "tarefas";
+  };
   const [page, setPage] = useState<Page>(read);
   useEffect(() => {
     const onHash = () => setPage(read());
@@ -44,6 +45,7 @@ function TopNav({ page, onNavigate }: { page: Page; onNavigate: (p: Page) => voi
         <TabsList>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
           <TabsTrigger value="sustentacao">Sustentação</TabsTrigger>
+          <TabsTrigger value="ferias">Férias</TabsTrigger>
         </TabsList>
       </Tabs>
     </div>
@@ -133,6 +135,8 @@ export function App() {
       {state.status === "ready" &&
         (page === "sustentacao" ? (
           <SustentacaoPage data={state.data.sustentacao} />
+        ) : page === "ferias" ? (
+          <FeriasPage data={state.data.sustentacao} />
         ) : (
           <div className="space-y-6">
             <Header data={state.data} />

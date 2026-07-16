@@ -1,18 +1,19 @@
 # Frontend
 
-React + Vite. Entrada `src/main.tsx` → `src/App.tsx`. Duas abas navegadas por **hash**
-(`#/sustentacao`; o resto cai em Tarefas) — sem lib de router.
+React + Vite. Entrada `src/main.tsx` → `src/App.tsx`. Três abas navegadas por **hash**
+(`#/sustentacao`, `#/ferias`; o resto cai em Tarefas) — sem lib de router.
 
 ## App shell — `src/App.tsx`
 
 - Carrega `public/data/tasks.json` (ou `/api/tasks`) via `hooks/useTasksData.ts`
   (estados loading/error/ready; erro instrui a rodar `pnpm sync`). O mesmo `TasksData`
   alimenta as duas abas.
-- `TopNav` (logo + abas **Tarefas**/**Sustentação**) fixo no topo; a aba vem do hash e
-  é linkável/sobrevive ao reload.
+- `TopNav` (logo + abas **Tarefas**/**Sustentação**/**Férias**) fixo no topo; a aba vem
+  do hash e é linkável/sobrevive ao reload.
 - Aba **Tarefas**: header com 4 cards de métrica — **Tarefas**, **Sem responsável**
   (tarefas com `assigneeName === "Não atribuída"`), **Boards**, **Épicos** — + o painel.
 - Aba **Sustentação**: `SustentacaoPage` (ver abaixo), lê `data.sustentacao`.
+- Aba **Férias**: `FeriasPage` (ver abaixo), lê `data.sustentacao.ferias`.
 
 ## Painel — `src/features/tasks/TasksPanel.tsx`
 
@@ -76,8 +77,17 @@ certa mesmo com o JSON gerado dias antes.
   `coveringFor` preenchido); se ninguém puder cobrir, `uncovered`.
 
 `SustentacaoPage.tsx` renderiza um card por grupo: responsável da semana em destaque
-(com badge "cobrindo …" quando é substituição), a sequência dos próximos plantões e, no
-rodapé, a lista de férias/ausências.
+(com badge "cobrindo …" quando é substituição) e a sequência dos próximos plantões. A
+lista de férias em si vive na aba **Férias** (abaixo).
+
+## Férias — `src/features/ferias/FeriasPage.tsx`
+
+Página dedicada às ausências (`data.sustentacao.ferias`). Classifica cada período por
+status contra o relógio do cliente — **Em férias agora**, **A seguir**, **Encerradas** —
+com rótulo relativo ("começa em N dias", "termina em N dias", "terminou há N dias") e
+duração em dias corridos. Mostra uma **linha do tempo** (gantt) com eixo de meses, uma
+barra por ausência e marcador de "hoje", além da lista agrupada por status. Cores por
+status; iniciais de avatar via `src/lib/people.ts`.
 
 ## Status — `src/features/tasks/status.ts`
 
