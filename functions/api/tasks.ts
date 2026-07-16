@@ -10,7 +10,7 @@
  * O acesso é protegido por Cloudflare Access (Zero Trust) no nível do projeto
  * Pages — esta função não faz autenticação própria.
  */
-import { buildTasksData, normalizeConfig } from "../../sync/core.ts";
+import { buildSustentacao, buildTasksData, normalizeConfig } from "../../sync/core.ts";
 import type { JiraCreds } from "../../sync/jira.ts";
 import type { TasksData, Urgency } from "../../sync/types.ts";
 import configRaw from "../../sync/config.json";
@@ -44,15 +44,22 @@ function creds(env: Env): JiraCreds {
   return { baseUrl, email: env.JIRA_EMAIL, token: env.JIRA_API_TOKEN };
 }
 
+const cfg = normalizeConfig(configRaw);
 const urgencyMap = (urgencyRaw as { urgency?: Record<string, Urgency> }).urgency ?? {};
 const vacations =
   (vacationsRaw as { vacations?: { email: string; inicio: string; fim: string }[] })
     .vacations ?? [];
 
+// Escala de sustentação/férias vem dos arquivos estáticos do repo (config.json +
+// vacations.json), empacotados no deploy — NÃO do Jira. Por isso é calculada aqui,
+// no bundle, e anexada em toda resposta, ignorando o que estiver no cache de tarefas.
+// Assim, editar os arquivos + redeploy atualiza a escala na hora (a semana corrente
+// é derivada no cliente). Só as tarefas do Jira passam pelo KV.
+const sustentacao = buildSustentacao(cfg, vacations);
+
 /** Busca no Jira e grava o resultado no KV. Usa um lock best-effort no KV. */
 async function refresh(env: Env, now: number): Promise<TasksData> {
   await env.TASKS_KV.put(LOCK_KEY, String(now), { expirationTtl: LOCK_TTL_S });
-  const cfg = normalizeConfig(configRaw);
   const data = await buildTasksData(creds(env), cfg, urgencyMap, vacations);
   const payload: Cached = { data, fetchedAt: now };
   await env.TASKS_KV.put(CACHE_KEY, JSON.stringify(payload));
@@ -60,7 +67,9 @@ async function refresh(env: Env, now: number): Promise<TasksData> {
 }
 
 function json(data: TasksData, ageMs: number, status = 200): Response {
-  return new Response(JSON.stringify(data), {
+  // Sempre serve a escala fresca do bundle, mesmo em cache velho de tarefas.
+  const body = { ...data, sustentacao };
+  return new Response(JSON.stringify(body), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",

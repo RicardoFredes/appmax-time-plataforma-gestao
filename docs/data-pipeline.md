@@ -65,6 +65,12 @@ está sempre certo independentemente de quando o JSON foi gerado. Se o engenheir
 estiver de férias sobrepondo o período, o plantão é coberto pelo próximo disponível do
 rodízio.
 
+**Produção não cacheia a escala.** Como os dados vêm de arquivos estáticos do repo
+(empacotados no deploy), a Pages Function calcula `buildSustentacao` no bundle e **anexa
+em toda resposta**, sobrescrevendo o que houver no cache de tarefas do KV. Só as tarefas
+do Jira passam pelo KV; editar `config.json`/`vacations.json` + redeploy atualiza a escala
+na hora, sem depender do TTL do cache.
+
 ## Overlay de urgência — `sync/urgency.json` + `apply-urgency.ts`
 
 Mapa manual `key -> alta|media|baixa`. Aplicado **no export** (não é coluna do banco),

@@ -52,6 +52,13 @@ foi gerado nem de recomputar no servidor. Férias são um arquivo separado
 filosofia do overlay de urgência. Cobertura de férias substitui pelo próximo do rodízio
 (display), sem deslocar a escala inteira, para manter o cálculo determinístico.
 
+Em produção a escala **não passa pelo KV**: a Function calcula `buildSustentacao` no
+bundle e anexa em toda resposta (`{ ...data, sustentacao }`), ignorando o que estiver no
+cache de tarefas. Motivo: sustentação/férias são arquivos do repo, então basta editar +
+redeploy para atualizar na hora — sem esperar o TTL de 15 min nem invalidar o cache. Um
+bug real disso: após adicionar `sustentacao` ao contrato, o KV ainda servia um payload
+antigo sem o campo e as abas apareciam vazias; calcular no bundle resolve de vez.
+
 ## Deploy público no Cloudflare Pages
 Escolha explícita do usuário: publicar em `*.pages.dev` público para o time revisar,
 ciente de que o `tasks.json` expõe nomes de parceiros e dados internos. Alternativa
