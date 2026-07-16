@@ -1,11 +1,54 @@
+import { useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTasksData } from "@/hooks/useTasksData";
 import { Logo } from "@/components/logo";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
+import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import type { TasksData } from "@/features/tasks/types";
+
+type Page = "tarefas" | "sustentacao";
+
+/** Página atual a partir do hash da URL (linkável, sobrevive ao reload). */
+function usePage(): [Page, (p: Page) => void] {
+  const read = (): Page =>
+    window.location.hash.replace(/^#\/?/, "") === "sustentacao"
+      ? "sustentacao"
+      : "tarefas";
+  const [page, setPage] = useState<Page>(read);
+  useEffect(() => {
+    const onHash = () => setPage(read());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const navigate = (p: Page) => {
+    window.location.hash = p === "tarefas" ? "" : `/${p}`;
+    setPage(p);
+  };
+  return [page, navigate];
+}
+
+function TopNav({ page, onNavigate }: { page: Page; onNavigate: (p: Page) => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <Logo variant="mark" className="h-7" />
+        <span className="text-sm font-semibold tracking-tight text-foreground">
+          Time Plataforma
+        </span>
+      </div>
+      <Tabs value={page} onValueChange={(v) => onNavigate(v as Page)}>
+        <TabsList>
+          <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+          <TabsTrigger value="sustentacao">Sustentação</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </div>
+  );
+}
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
@@ -30,12 +73,6 @@ function Header({ data }: { data: TasksData }) {
 
   return (
     <div className="space-y-5 border-b pb-5">
-      <div className="flex items-center gap-3">
-        <Logo variant="mark" className="h-7" />
-        <span className="text-sm font-semibold tracking-tight text-foreground">
-          Time Plataforma
-        </span>
-      </div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Painel de Tarefas</h1>
@@ -86,17 +123,22 @@ function ErrorState({ error }: { error: string }) {
 
 export function App() {
   const state = useTasksData();
+  const [page, navigate] = usePage();
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+      <TopNav page={page} onNavigate={navigate} />
       {state.status === "loading" && <LoadingState />}
       {state.status === "error" && <ErrorState error={state.error} />}
-      {state.status === "ready" && (
-        <div className="space-y-6">
-          <Header data={state.data} />
-          <TasksPanel data={state.data} />
-        </div>
-      )}
+      {state.status === "ready" &&
+        (page === "sustentacao" ? (
+          <SustentacaoPage data={state.data.sustentacao} />
+        ) : (
+          <div className="space-y-6">
+            <Header data={state.data} />
+            <TasksPanel data={state.data} />
+          </div>
+        ))}
     </div>
   );
 }

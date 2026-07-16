@@ -24,16 +24,33 @@ funcionar nela.
 
 ## Urgência como overlay que sobrevive ao sync
 Urgência é avaliação manual em `sync/urgency.json`, aplicada no export — não é campo do
-Jira nem coluna do SQLite. Assim `pnpm sync` não sobrescreve a classificação.
+Jira. Assim `pnpm sync` não sobrescreve a classificação.
 
 ## Concluídas escondidas por padrão
 `statusCategory === "done"` fica oculto por padrão (toggle revela). O painel é para
 trabalho em aberto; usa o `statusCategory` do Jira (confiável), não a heurística de
 nome.
 
-## SQLite (better-sqlite3)
-Cache/fonte local sugerida pelo próprio pedido do MVP. Nativo — liberado no pnpm 10 via
-`pnpm.onlyBuiltDependencies`.
+## SQLite removido (era better-sqlite3)
+O MVP usava SQLite como cache local entre o Jira e o `tasks.json`. Com o backend
+dinâmico (`/api/tasks` + KV), a orquestração passou a viver em `sync/core.ts`
+(`buildTasksData`), que monta o `TasksData` inteiro em memória — merge de `sources` e
+overlay de urgência incluídos. O SQLite virou intermediário puro e foi removido junto
+com a dep nativa `better-sqlite3` (e o `pnpm.onlyBuiltDependencies`): menos superfície,
+sem duplicação de lógica de dados. O `pnpm sync` agora chama o mesmo `buildTasksData` da
+Function; `pnpm sync:export` reaplica só a urgência no JSON existente (uso offline).
+
+## Escala de sustentação no mesmo pipeline
+A escala de plantão poderia ser um arquivo à parte no frontend, mas os grupos já vivem
+no `config.json` (`sustentacao_grupo` por pessoa). Para ter **fonte única**, a escala
+viaja no mesmo `TasksData` (`buildSustentacao` em `core.ts`, anexado por `buildTasksData`),
+então funciona igual nos dois caminhos (JSON estático e Function). O **cálculo da semana
+corrente fica no cliente** (`schedule.ts`), a partir do relógio do navegador: o rodízio é
+determinístico por data (ancorado em `anchorMonday`), então não depende de quando o JSON
+foi gerado nem de recomputar no servidor. Férias são um arquivo separado
+(`sync/vacations.json`) porque mudam por conta própria e não são campo do Jira — mesma
+filosofia do overlay de urgência. Cobertura de férias substitui pelo próximo do rodízio
+(display), sem deslocar a escala inteira, para manter o cálculo determinístico.
 
 ## Deploy público no Cloudflare Pages
 Escolha explícita do usuário: publicar em `*.pages.dev` público para o time revisar,

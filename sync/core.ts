@@ -1,17 +1,32 @@
 /**
  * Núcleo portátil do sync: busca no Jira e monta o `TasksData` em memória,
- * sem SQLite e sem `fs`. Roda tanto no script local (tsx) quanto na Pages
- * Function do Cloudflare (Worker, com `nodejs_compat` para o `Buffer` do
- * Basic Auth em `jira.ts`).
+ * sem banco e sem `fs`. Roda tanto no script local (`sync.ts` via tsx) quanto
+ * na Pages Function do Cloudflare (Worker, com `nodejs_compat` para o `Buffer`
+ * do Basic Auth em `jira.ts`).
  *
- * O pipeline local (`sync.ts` + `db.ts`) continua existindo como cache/offline;
- * este módulo é a fonte única da orquestração das queries.
+ * É a fonte única da orquestração das queries: os dois consumidores
+ * (`sync.ts` → JSON estático e `functions/api/tasks.ts` → KV) usam este módulo.
  */
 import { JiraClient, type JiraCreds } from "./jira.ts";
-import type { SyncConfig, Task, TasksData, TrackedEpic, Urgency } from "./types.ts";
+import type {
+  ConfigUser,
+  SustentacaoData,
+  SyncConfig,
+  Task,
+  TasksData,
+  TrackedEpic,
+  Urgency,
+  Vacation,
+} from "./types.ts";
 
 /** Normaliza o `config.json` bruto para `SyncConfig` (mesma lógica do sync.ts). */
 export function normalizeConfig(raw: any): SyncConfig {
+  const users: ConfigUser[] = (raw?.users ?? []).map((u: any) => ({
+    email: u.email,
+    name: u.name,
+    sustentacaoGrupo: u.sustentacao_grupo ?? -1,
+  }));
+  const sust = raw?.sustentacao ?? {};
   return {
     options: {
       includeDone: raw?.options?.includeDone ?? false,
@@ -19,8 +34,55 @@ export function normalizeConfig(raw: any): SyncConfig {
       doneWithinDays: raw?.options?.doneWithinDays ?? 21,
       createdFrom: raw?.options?.createdFrom ?? "",
     },
-    users: raw?.users ?? [],
+    users,
     epics: raw?.epics ?? [],
+    sustentacao: {
+      anchorMonday: sust.anchorMonday ?? "",
+      semanasPorEngenheiro: sust.semanasPorEngenheiro ?? 2,
+      grupos: (sust.grupos ?? []).map((g: any) => ({
+        grupo: g.grupo,
+        escopo: g.escopo ?? "",
+        inicio: g.inicio ?? "",
+      })),
+    },
+  };
+}
+
+/**
+ * Monta a escala de sustentação a partir do config (grupos + `sustentacao_grupo`
+ * dos usuários) e do arquivo de férias. A ordem do rodízio segue a ordem dos
+ * usuários no config, girada para começar no engenheiro `inicio` de cada grupo.
+ * Cálculo puro (sem rede) — o frontend deriva a semana corrente do relógio dele.
+ */
+export function buildSustentacao(
+  cfg: SyncConfig,
+  vacationsRaw: { email: string; inicio: string; fim: string }[] = [],
+): SustentacaoData {
+  const nameByEmail = new Map(cfg.users.map((u) => [u.email, u.name]));
+
+  const grupos = cfg.sustentacao.grupos.map((g) => {
+    const membros = cfg.users.filter((u) => u.sustentacaoGrupo === g.grupo);
+    const startIdx = membros.findIndex((u) => u.email === g.inicio);
+    const ordered = startIdx > 0 ? [...membros.slice(startIdx), ...membros.slice(0, startIdx)] : membros;
+    return {
+      grupo: g.grupo,
+      escopo: g.escopo,
+      engenheiros: ordered.map((u) => ({ email: u.email, name: u.name })),
+    };
+  });
+
+  const ferias: Vacation[] = vacationsRaw.map((v) => ({
+    email: v.email,
+    name: nameByEmail.get(v.email) ?? v.email,
+    inicio: v.inicio,
+    fim: v.fim,
+  }));
+
+  return {
+    anchorMonday: cfg.sustentacao.anchorMonday,
+    semanasPorEngenheiro: cfg.sustentacao.semanasPorEngenheiro,
+    grupos,
+    ferias,
   };
 }
 
@@ -47,6 +109,7 @@ export async function buildTasksData(
   creds: JiraCreds,
   cfg: SyncConfig,
   urgencyMap: Record<string, Urgency> = {},
+  vacations: { email: string; inicio: string; fim: string }[] = [],
 ): Promise<TasksData> {
   const jira = new JiraClient(creds);
   const max = cfg.options.maxResultsPerQuery;
@@ -104,8 +167,9 @@ export async function buildTasksData(
   return {
     generatedAt: new Date().toISOString(),
     tasks,
-    users: cfg.users,
+    users: cfg.users.map((u) => ({ email: u.email, name: u.name })),
     epics,
     boards,
+    sustentacao: buildSustentacao(cfg, vacations),
   };
 }

@@ -1,29 +1,28 @@
 /**
- * Orquestrador do sync Jira -> SQLite -> JSON.
+ * Orquestrador do sync Jira -> JSON.
  *
- *   pnpm sync                 # busca no Jira, atualiza o SQLite e exporta o JSON
- *   pnpm sync -- --export-only  # só reexporta o JSON a partir do SQLite (sem rede)
+ *   pnpm sync                    # busca no Jira e escreve public/data/tasks.json
+ *   pnpm sync -- --export-only   # só reaplica o overlay de urgência no JSON
+ *                                # já existente (sem rede)
  *
- * Fonte de dados do frontend: public/data/tasks.json
+ * A orquestração das queries vive em `sync/core.ts` (`buildTasksData`),
+ * compartilhada com a Pages Function `/api/tasks` — os dois caminhos não
+ * divergem. Fonte de dados do frontend: public/data/tasks.json.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { JiraClient, credsFromEnv } from "./jira.ts";
-import {
-  openDb,
-  upsertTask,
-  pruneStale,
-  readAllTasks,
-} from "./db.ts";
+import { credsFromEnv } from "./jira.ts";
+import { buildSustentacao, buildTasksData, normalizeConfig } from "./core.ts";
 import { applyUrgency } from "./apply-urgency.ts";
-import { scopeClause } from "./core.ts";
-import type { SyncConfig, TasksData, TrackedEpic } from "./types.ts";
+import type { SyncConfig, TasksData, Urgency } from "./types.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT_FILE = path.resolve(ROOT, "public/data/tasks.json");
 const CONFIG_FILE = path.resolve(__dirname, "config.json");
+const URGENCY_FILE = path.resolve(__dirname, "urgency.json");
+const VACATIONS_FILE = path.resolve(__dirname, "vacations.json");
 
 /** Carrega variáveis do `.env` na raiz (parser mínimo, sem dependência externa). */
 function loadEnvFile(): void {
@@ -41,105 +40,61 @@ function loadEnvFile(): void {
 }
 
 function loadConfig(): SyncConfig {
-  const raw = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
-  return {
-    options: {
-      includeDone: raw.options?.includeDone ?? false,
-      maxResultsPerQuery: raw.options?.maxResultsPerQuery ?? 100,
-      doneWithinDays: raw.options?.doneWithinDays ?? 21,
-      createdFrom: raw.options?.createdFrom ?? "",
-    },
-    users: raw.users ?? [],
-    epics: raw.epics ?? [],
-  };
+  return normalizeConfig(JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8")));
 }
 
-function exportJson(cfg: SyncConfig, epics: TrackedEpic[], generatedAt: string) {
-  const db = openDb();
-  const tasks = applyUrgency(readAllTasks(db));
-  db.close();
+function loadUrgencyMap(): Record<string, Urgency> {
+  if (!fs.existsSync(URGENCY_FILE)) return {};
+  const raw = JSON.parse(fs.readFileSync(URGENCY_FILE, "utf8"));
+  return (raw.urgency ?? {}) as Record<string, Urgency>;
+}
 
-  const boards = Array.from(new Set(tasks.map((t) => t.board).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+function loadVacations(): { email: string; inicio: string; fim: string }[] {
+  if (!fs.existsSync(VACATIONS_FILE)) return [];
+  const raw = JSON.parse(fs.readFileSync(VACATIONS_FILE, "utf8"));
+  return (raw.vacations ?? []) as { email: string; inicio: string; fim: string }[];
+}
 
-  const data: TasksData = {
-    generatedAt,
-    tasks,
-    users: cfg.users,
-    epics,
-    boards,
-  };
-
+function writeJson(data: TasksData): void {
   fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
   fs.writeFileSync(OUT_FILE, JSON.stringify(data, null, 2), "utf8");
   console.log(
-    `✓ Exportado ${tasks.length} tarefas -> ${path.relative(ROOT, OUT_FILE)}`,
+    `✓ Exportado ${data.tasks.length} tarefas -> ${path.relative(ROOT, OUT_FILE)}`,
   );
-}
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-async function fetchEpicsMeta(
-  jira: JiraClient,
-  cfg: SyncConfig,
-): Promise<TrackedEpic[]> {
-  if (cfg.epics.length === 0) return [];
-  const jql = `key in (${cfg.epics.join(",")})`;
-  const issues = await jira.searchAll(jql, cfg.options.maxResultsPerQuery);
-  return issues.map((i) => ({
-    key: i.key,
-    summary: i.fields.summary ?? i.key,
-    board: i.fields.project?.name ?? "",
-  }));
 }
 
 async function runSync(): Promise<void> {
   loadEnvFile();
   const cfg = loadConfig();
-  const jira = new JiraClient(credsFromEnv());
-  const syncedAt = nowIso();
-  const db = openDb();
+  console.log(
+    `→ Buscando no Jira (${cfg.users.length} usuários, ${cfg.epics.length} épicos)...`,
+  );
+  const data = await buildTasksData(
+    credsFromEnv(),
+    cfg,
+    loadUrgencyMap(),
+    loadVacations(),
+  );
+  writeJson(data);
+}
 
-  // 1) Tarefas atribuídas aos usuários acompanhados.
-  if (cfg.users.length > 0) {
-    const emails = cfg.users.map((u) => `"${u.email}"`).join(",");
-    const jql = `assignee in (${emails}) AND ${scopeClause(cfg)} ORDER BY updated DESC`;
-    console.log(`→ Buscando tarefas atribuídas (${cfg.users.length} usuários)...`);
-    const issues = await jira.searchAll(jql, cfg.options.maxResultsPerQuery);
-    for (const issue of issues) {
-      upsertTask(db, jira.mapIssue(issue, ["assignee"]), syncedAt);
-    }
-    console.log(`  ${issues.length} tarefas atribuídas.`);
+/** Reaplica o overlay de urgência no `tasks.json` existente, sem tocar no Jira. */
+function exportOnly(): void {
+  if (!fs.existsSync(OUT_FILE)) {
+    throw new Error(
+      `${path.relative(ROOT, OUT_FILE)} não existe — rode \`pnpm sync\` primeiro.`,
+    );
   }
-
-  // 2) Tarefas dos épicos listados (board de épicos).
-  if (cfg.epics.length > 0) {
-    const keys = cfg.epics.join(",");
-    const jql = `parent in (${keys}) AND ${scopeClause(cfg)} ORDER BY updated DESC`;
-    console.log(`→ Buscando tarefas de ${cfg.epics.length} épico(s)...`);
-    const issues = await jira.searchAll(jql, cfg.options.maxResultsPerQuery);
-    for (const issue of issues) {
-      upsertTask(db, jira.mapIssue(issue, ["epic"]), syncedAt);
-    }
-    console.log(`  ${issues.length} tarefas de épicos.`);
-  }
-
-  const removed = pruneStale(db, syncedAt);
-  if (removed > 0) console.log(`  ${removed} tarefas fora de escopo removidas.`);
-  db.close();
-
-  const epics = await fetchEpicsMeta(jira, cfg);
-  exportJson(cfg, epics, syncedAt);
+  const data = JSON.parse(fs.readFileSync(OUT_FILE, "utf8")) as TasksData;
+  data.tasks = applyUrgency(data.tasks);
+  // Reconstrói a escala a partir do config/vacations (offline, sem rede).
+  data.sustentacao = buildSustentacao(loadConfig(), loadVacations());
+  writeJson(data);
 }
 
 async function main(): Promise<void> {
-  const exportOnly = process.argv.includes("--export-only");
-  if (exportOnly) {
-    loadEnvFile();
-    const cfg = loadConfig();
-    exportJson(cfg, [], nowIso());
+  if (process.argv.includes("--export-only")) {
+    exportOnly();
     return;
   }
   await runSync();

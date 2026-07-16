@@ -1,13 +1,18 @@
 # Frontend
 
-React + Vite. Entrada `src/main.tsx` → `src/App.tsx`. Sem router (página única).
+React + Vite. Entrada `src/main.tsx` → `src/App.tsx`. Duas abas navegadas por **hash**
+(`#/sustentacao`; o resto cai em Tarefas) — sem lib de router.
 
 ## App shell — `src/App.tsx`
 
-- Carrega `public/data/tasks.json` via `hooks/useTasksData.ts` (estados
-  loading/error/ready; erro instrui a rodar `pnpm sync`).
-- Header com 4 cards de métrica: **Tarefas**, **Sem responsável** (tarefas com
-  `assigneeName === "Não atribuída"`), **Boards**, **Épicos**.
+- Carrega `public/data/tasks.json` (ou `/api/tasks`) via `hooks/useTasksData.ts`
+  (estados loading/error/ready; erro instrui a rodar `pnpm sync`). O mesmo `TasksData`
+  alimenta as duas abas.
+- `TopNav` (logo + abas **Tarefas**/**Sustentação**) fixo no topo; a aba vem do hash e
+  é linkável/sobrevive ao reload.
+- Aba **Tarefas**: header com 4 cards de métrica — **Tarefas**, **Sem responsável**
+  (tarefas com `assigneeName === "Não atribuída"`), **Boards**, **Épicos** — + o painel.
+- Aba **Sustentação**: `SustentacaoPage` (ver abaixo), lê `data.sustentacao`.
 
 ## Painel — `src/features/tasks/TasksPanel.tsx`
 
@@ -54,6 +59,25 @@ conjunto filtrado/ordenado (`sorted`).
 - **Done sempre visível no Kanban**: `includeDone = showDone || layout === "kanban"`.
   O toggle "Mostrar concluídas" só afeta a Tabela; no Kanban ele é substituído pelo
   texto "Done sempre visível".
+
+## Sustentação — `src/features/sustentacao/`
+
+Escala de plantão por grupo. `schedule.ts` é o **cálculo puro** do rodízio; a semana
+corrente vem do relógio do cliente (`new Date()` no render), então a página está sempre
+certa mesmo com o JSON gerado dias antes.
+
+- **Slots**: semanas começam na segunda (`weekStartsOn: 1`); cada engenheiro cobre
+  `semanasPorEngenheiro` semanas. O slot que contém `anchorMonday` é o slot 0 e cabe ao
+  primeiro engenheiro do grupo (a lista já vem girada para começar no `inicio`).
+- **Índice do slot atual**: `floor(semanas_desde_o_anchor / semanasPorEngenheiro)`; o
+  engenheiro é `engenheiros[slot % n]`.
+- **Férias**: se o turno do engenheiro-base sobrepõe uma ausência (`data.ferias`), o
+  slot é coberto pelo **próximo disponível** do rodízio (`effective` ≠ `base`,
+  `coveringFor` preenchido); se ninguém puder cobrir, `uncovered`.
+
+`SustentacaoPage.tsx` renderiza um card por grupo: responsável da semana em destaque
+(com badge "cobrindo …" quando é substituição), a sequência dos próximos plantões e, no
+rodapé, a lista de férias/ausências.
 
 ## Status — `src/features/tasks/status.ts`
 

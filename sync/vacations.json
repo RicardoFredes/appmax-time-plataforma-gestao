@@ -1,0 +1,10 @@
+{
+  "$doc": "Períodos de férias/ausência que afetam a escala de sustentação. Datas em YYYY-MM-DD, inclusivas nas duas pontas. O engenheiro em férias durante seu turno é coberto pelo próximo do rodízio.",
+  "vacations": [
+    {
+      "email": "joao.justo@appmax.com.br",
+      "inicio": "2026-07-20",
+      "fim": "2026-08-07"
+    }
+  ]
+}

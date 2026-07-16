@@ -1,7 +1,7 @@
 /**
  * Seed inicial (one-off): converte resultados brutos do MCP do Jira
- * (salvos em arquivos JSON) para o SQLite + public/data/tasks.json,
- * sem precisar de API token. Depois disso, use `pnpm sync` (REST).
+ * (salvos em arquivos JSON) para public/data/tasks.json, sem precisar de
+ * API token. Depois disso, use `pnpm sync` (REST).
  *
  *   pnpm tsx sync/seed-from-mcp.ts <arquivo:source> [...] [--epics KEY,KEY]
  *   ex: pnpm tsx sync/seed-from-mcp.ts a.txt:assignee b.txt:epic --epics SEP-358
@@ -9,8 +9,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openDb, upsertTask, pruneStale, readAllTasks } from "./db.ts";
 import { applyUrgency } from "./apply-urgency.ts";
+import { buildSustentacao, normalizeConfig } from "./core.ts";
 import type { Task, TaskSource, TasksData, TrackedEpic } from "./types.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -69,10 +69,11 @@ function main() {
     epicsIdx >= 0 ? args[epicsIdx + 1].split(",").map((s) => s.trim()) : [];
   const fileArgs = (epicsIdx >= 0 ? args.slice(0, epicsIdx) : args).filter(Boolean);
 
-  const db = openDb();
   const syncedAt = new Date().toISOString();
   let total = 0;
   const epicMeta = new Map<string, TrackedEpic>();
+  // Mescla `sources` de tarefas que aparecem em mais de um arquivo (por key).
+  const byKey = new Map<string, Task>();
 
   for (const arg of fileArgs) {
     const sep = arg.lastIndexOf(":");
@@ -81,7 +82,11 @@ function main() {
     const nodes = loadNodes(file);
     for (const node of nodes) {
       const task = mapNode(node, source);
-      upsertTask(db, task, syncedAt);
+      const prev = byKey.get(task.key);
+      if (prev) {
+        task.sources = Array.from(new Set([...prev.sources, ...task.sources]));
+      }
+      byKey.set(task.key, task);
       total++;
       // Coleta metadados do épico a partir do parent das tarefas-filhas.
       const parent = node.fields?.parent;
@@ -95,20 +100,30 @@ function main() {
     }
   }
 
-  pruneStale(db, syncedAt);
-  const tasks = applyUrgency(readAllTasks(db));
-  db.close();
+  const tasks = applyUrgency(Array.from(byKey.values()));
 
-  const users = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, "config.json"), "utf8"),
-  ).users;
+  const cfg = normalizeConfig(
+    JSON.parse(fs.readFileSync(path.resolve(__dirname, "config.json"), "utf8")),
+  );
+  const users = cfg.users.map((u) => ({ email: u.email, name: u.name }));
+  const vacationsPath = path.resolve(__dirname, "vacations.json");
+  const vacations = fs.existsSync(vacationsPath)
+    ? JSON.parse(fs.readFileSync(vacationsPath, "utf8")).vacations ?? []
+    : [];
   const boards = Array.from(new Set(tasks.map((t) => t.board).filter(Boolean)))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
   const epics = epicKeys.map(
     (k) => epicMeta.get(k) ?? { key: k, summary: k, board: "" },
   );
 
-  const data: TasksData = { generatedAt: syncedAt, tasks, users, epics, boards };
+  const data: TasksData = {
+    generatedAt: syncedAt,
+    tasks,
+    users,
+    epics,
+    boards,
+    sustentacao: buildSustentacao(cfg, vacations),
+  };
   fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
   fs.writeFileSync(OUT_FILE, JSON.stringify(data, null, 2), "utf8");
   console.log(`✓ Seed: ${total} nós lidos, ${tasks.length} tarefas -> tasks.json`);

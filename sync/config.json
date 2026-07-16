@@ -7,18 +7,71 @@
     "createdFrom": "2026-01-01"
   },
   "users": [
-    { "email": "ricardo.silveira@appmax.com.br", "name": "Ricardo Silveira" },
-    { "email": "bruno.schneider@appmax.com.br", "name": "Bruno Schneider" },
-    { "email": "diogo.januario@appmax.com.br", "name": "Diogo Januário" },
-    { "email": "felipe.carvalho@appmax.com.br", "name": "Felipe Carvalho" },
-    { "email": "ian.oliveira@appmax.com.br", "name": "Ian Oliveira" },
-    { "email": "joao.justo@appmax.com.br", "name": "João Justo" },
-    { "email": "jose.chagury@appmax.com.br", "name": "José Chagury" },
-    { "email": "witerlland.silva@appmax.com.br", "name": "Witerlland Silva" }
+    {
+      "email": "ricardo.silveira@appmax.com.br",
+      "name": "Ricardo Silveira",
+      "contextos": ["Plataforma", "Backoffice"],
+      "posicao": "Líder",
+      "sustentacao_grupo": -1
+    },
+    {
+      "email": "bruno.schneider@appmax.com.br",
+      "name": "Bruno Schneider",
+      "contexto": ["Plataforma", "Backoffice"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": 1
+    },
+    {
+      "email": "diogo.januario@appmax.com.br",
+      "name": "Diogo Januário",
+      "contexto": ["Aplicativo"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": 2
+    },
+    {
+      "email": "felipe.carvalho@appmax.com.br",
+      "name": "Felipe Carvalho",
+      "contexto": ["Plataforma", "Backoffice"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": 1
+    },
+    {
+      "email": "ian.oliveira@appmax.com.br",
+      "name": "Ian Oliveira",
+      "contexto": ["Aplicativo"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": 2
+    },
+    {
+      "email": "joao.justo@appmax.com.br",
+      "name": "João Justo",
+      "contexto": ["Plataforma", "Backoffice"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": 1
+    },
+    {
+      "email": "jose.chagury@appmax.com.br",
+      "name": "José Chagury",
+      "contexto": ["Plataforma"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": -1
+    },
+    {
+      "email": "witerlland.silva@appmax.com.br",
+      "name": "Witerlland Silva",
+      "contexto": ["Plataforma", "Backoffice"],
+      "posicao": "Engenheiro",
+      "sustentacao_grupo": 1
+    }
   ],
-  "epics": [
-    "SUS-4815",
-    "SUS-1336",
-    "SUS-4623"
-  ]
+  "epics": ["SUS-4815", "SUS-1336", "SUS-4623"],
+  "sustentacao": {
+    "$doc": "Escala de sustentação. `anchorMonday` é a segunda-feira em que o `inicio` de cada grupo assume; cada engenheiro cobre `semanasPorEngenheiro` semanas seguidas. A ordem do rodízio segue a ordem dos usuários em `users` (por grupo), girada para começar no `inicio`. Grupo -1 não entra na escala. Férias em sync/vacations.json.",
+    "anchorMonday": "2026-07-13",
+    "semanasPorEngenheiro": 2,
+    "grupos": [
+      { "grupo": 1, "escopo": "Plataforma / Backoffice", "inicio": "felipe.carvalho@appmax.com.br" },
+      { "grupo": 2, "escopo": "Aplicativo", "inicio": "ian.oliveira@appmax.com.br" }
+    ]
+  }
 }

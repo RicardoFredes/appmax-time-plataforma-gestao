@@ -15,6 +15,7 @@ import type { JiraCreds } from "../../sync/jira.ts";
 import type { TasksData, Urgency } from "../../sync/types.ts";
 import configRaw from "../../sync/config.json";
 import urgencyRaw from "../../sync/urgency.json";
+import vacationsRaw from "../../sync/vacations.json";
 
 interface Env {
   TASKS_KV: KVNamespace;
@@ -44,12 +45,15 @@ function creds(env: Env): JiraCreds {
 }
 
 const urgencyMap = (urgencyRaw as { urgency?: Record<string, Urgency> }).urgency ?? {};
+const vacations =
+  (vacationsRaw as { vacations?: { email: string; inicio: string; fim: string }[] })
+    .vacations ?? [];
 
 /** Busca no Jira e grava o resultado no KV. Usa um lock best-effort no KV. */
 async function refresh(env: Env, now: number): Promise<TasksData> {
   await env.TASKS_KV.put(LOCK_KEY, String(now), { expirationTtl: LOCK_TTL_S });
   const cfg = normalizeConfig(configRaw);
-  const data = await buildTasksData(creds(env), cfg, urgencyMap);
+  const data = await buildTasksData(creds(env), cfg, urgencyMap, vacations);
   const payload: Cached = { data, fetchedAt: now };
   await env.TASKS_KV.put(CACHE_KEY, JSON.stringify(payload));
   return data;
