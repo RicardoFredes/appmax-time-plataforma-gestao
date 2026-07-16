@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
-import { BACKOFFICE_PANEL_URL, checkEmbed } from "@/lib/embed";
+import { BACKOFFICE_PANEL_URL, checkEmbed, isChromeless } from "@/lib/embed";
 import type { TasksData } from "@/features/tasks/types";
 
 type Page = "tarefas" | "sustentacao" | "ferias";
@@ -165,9 +165,12 @@ export function App() {
 
   if (checkEmbed() !== "ok") return <EmbedRedirect />;
 
+  // Embutido com ?chrome=off (backoffice navega pelo próprio menu): esconde o TopNav.
+  const chromeless = isChromeless();
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-      <TopNav page={page} onNavigate={navigate} />
+      {!chromeless && <TopNav page={page} onNavigate={navigate} />}
       {state.status === "loading" && <LoadingState />}
       {state.status === "error" && <ErrorState error={state.error} />}
       {state.status === "ready" &&

@@ -23,6 +23,15 @@ export const BACKOFFICE_PANEL_URL = "https://backoffice.appmax.com.br/time-plata
 
 export type EmbedStatus = "ok" | "standalone" | "forbidden-ancestor";
 
+/**
+ * True quando o embedder pediu para esconder o "chrome" do painel (a barra de
+ * navegação própria) via `?chrome=off`. Usado quando o backoffice embute uma aba
+ * específica e faz a navegação pelo menu dele — evita barra de navegação dupla.
+ */
+export function isChromeless(): boolean {
+  return new URLSearchParams(window.location.search).get("chrome") === "off";
+}
+
 /** Decide se o painel pode renderizar no contexto atual. */
 export function checkEmbed(): EmbedStatus {
   // Em dev (`pnpm dev`) não bloqueia — permite desenvolver o painel sozinho.
