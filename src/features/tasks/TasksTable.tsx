@@ -24,7 +24,7 @@ type Props = {
   onSort: (key: SortKey) => void;
 };
 
-function SortHead({
+export function SortHead({
   label,
   sortKey,
   sort,
@@ -81,6 +81,50 @@ function UrgencyBadge({ urgency }: { urgency: Task["urgency"] }) {
   );
 }
 
+/** Colunas de uma linha de tarefa (compartilhadas entre a tabela plana e a
+ * visão agrupada por épico). A coluna "Épico" só entra quando `showEpic`. */
+export function TaskRow({ task: t, showEpic }: { task: Task; showEpic: boolean }) {
+  return (
+    <TableRow className="align-top">
+      <TableCell className="font-mono text-xs text-muted-foreground">
+        {t.key}
+      </TableCell>
+      <TableCell>
+        <a
+          href={t.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group inline-flex items-start gap-1 font-medium hover:text-primary"
+        >
+          <IssueTypeIcon issueType={t.issueType} className="mt-0.5 h-3.5 w-3.5" />
+          <span className="border-b border-transparent group-hover:border-primary">
+            <TaskTitle summary={t.summary} />
+          </span>
+          <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 opacity-0 group-hover:opacity-60" />
+        </a>
+        {t.description && (
+          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
+            {t.description}
+          </p>
+        )}
+      </TableCell>
+      <TableCell className="text-sm">{t.assigneeName}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">{t.board}</TableCell>
+      {showEpic && (
+        <TableCell className="text-xs text-muted-foreground">
+          {t.epicSummary ?? "—"}
+        </TableCell>
+      )}
+      <TableCell>
+        <UrgencyBadge urgency={t.urgency} />
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={t.status} />
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function TasksTable({ tasks, showEpic, sort, onSort }: Props) {
   if (tasks.length === 0) {
     return (
@@ -124,45 +168,7 @@ export function TasksTable({ tasks, showEpic, sort, onSort }: Props) {
         </TableHeader>
         <TableBody>
           {tasks.map((t) => (
-            <TableRow key={t.key} className="align-top">
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {t.key}
-              </TableCell>
-              <TableCell>
-                <a
-                  href={t.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group inline-flex items-start gap-1 font-medium hover:text-primary"
-                >
-                  <IssueTypeIcon issueType={t.issueType} className="mt-0.5 h-3.5 w-3.5" />
-                  <span className="border-b border-transparent group-hover:border-primary">
-                    <TaskTitle summary={t.summary} />
-                  </span>
-                  <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 opacity-0 group-hover:opacity-60" />
-                </a>
-                {t.description && (
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
-                    {t.description}
-                  </p>
-                )}
-              </TableCell>
-              <TableCell className="text-sm">{t.assigneeName}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {t.board}
-              </TableCell>
-              {showEpic && (
-                <TableCell className="text-xs text-muted-foreground">
-                  {t.epicSummary ?? "—"}
-                </TableCell>
-              )}
-              <TableCell>
-                <UrgencyBadge urgency={t.urgency} />
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={t.status} />
-              </TableCell>
-            </TableRow>
+            <TaskRow key={t.key} task={t} showEpic={showEpic} />
           ))}
         </TableBody>
       </Table>

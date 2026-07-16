@@ -5,7 +5,9 @@ import { TaskFilters, type FiltersState } from "./TaskFilters";
 import { PeopleChips } from "./PeopleChips";
 import { StatusTicker } from "./StatusTicker";
 import { KanbanBoard } from "./KanbanBoard";
+import { EpicGroups } from "./EpicGroups";
 import { TasksTable, type SortKey, type SortState } from "./TasksTable";
+import { isEpic } from "./issue";
 import {
   STATUS_ORDER,
   kanbanLane,
@@ -82,16 +84,20 @@ export function TasksPanel({ data }: { data: TasksData }) {
     return map;
   }, [data.users]);
 
-  // No Kanban a coluna Done é sempre visível; o toggle showDone só vale na Tabela.
-  const includeDone = showDone || layout === "kanban";
+  // O Kanban só existe na aba Tasks; lá a coluna Done é sempre visível.
+  const kanban = view === "tasks" && layout === "kanban";
+  // No Kanban a coluna Done é sempre visível; o toggle showDone só vale nas listas.
+  const includeDone = showDone || kanban;
 
   // Conjunto base conforme a aba, já aplicando:
+  // - épicos nunca entram como linha (são cabeçalho de grupo na aba Épicos);
   // - "Tasks" mostra todas; "Épicos" só as de épicos acompanhados;
   // - só tarefas não-atribuídas ou de pessoas do time;
-  // - concluídas escondidas por padrão na Tabela (sempre visíveis no Kanban).
+  // - concluídas escondidas por padrão nas listas (sempre visíveis no Kanban).
   const base = useMemo(
     () =>
       data.tasks.filter((t) => {
+        if (isEpic(t.issueType)) return false;
         if (view === "epic" && !t.sources.includes("epic")) return false;
         // Mantém só não-atribuídas ou pessoas do time (por e-mail).
         const isUnassigned = t.assigneeName === "Não atribuída";
@@ -224,15 +230,17 @@ export function TasksPanel({ data }: { data: TasksData }) {
           </TabsList>
         </Tabs>
 
-        <Tabs
-          value={layout}
-          onValueChange={(v) => setLayout(v as "table" | "kanban")}
-        >
-          <TabsList>
-            <TabsTrigger value="table">Tabela</TabsTrigger>
-            <TabsTrigger value="kanban">Kanban</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {view === "tasks" && (
+          <Tabs
+            value={layout}
+            onValueChange={(v) => setLayout(v as "table" | "kanban")}
+          >
+            <TabsList>
+              <TabsTrigger value="table">Tabela</TabsTrigger>
+              <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
       </div>
 
       <StatusTicker
@@ -260,7 +268,7 @@ export function TasksPanel({ data }: { data: TasksData }) {
         <p className="text-xs text-muted-foreground">
           {filtered.length} de {base.length} tarefas
         </p>
-        {layout === "table" ? (
+        {!kanban ? (
           <button
             type="button"
             role="switch"
@@ -290,15 +298,17 @@ export function TasksPanel({ data }: { data: TasksData }) {
         )}
       </div>
 
-      {layout === "table" ? (
-        <TasksTable
+      {view === "epic" ? (
+        <EpicGroups
           tasks={sorted}
-          showEpic={view === "epic"}
+          epics={data.epics}
           sort={sort}
           onSort={toggleSort}
         />
+      ) : layout === "table" ? (
+        <TasksTable tasks={sorted} showEpic={false} sort={sort} onSort={toggleSort} />
       ) : (
-        <KanbanBoard tasks={sorted} showEpic={view === "epic"} />
+        <KanbanBoard tasks={sorted} showEpic={false} />
       )}
     </div>
   );

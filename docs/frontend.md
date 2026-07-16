@@ -21,9 +21,15 @@ Concentra o estado (filtros, categoria do ticker, pessoas, showDone, sort) e der
 facets + lista filtrada/ordenada.
 
 ### Abas (view)
-- **Tasks**: todas as tarefas.
-- **Épicos**: só as com `sources` incluindo `"epic"`.
-- A coluna "Épico" só aparece na aba Épicos.
+- **Tasks**: lista plana de tarefas (tabela ou kanban).
+- **Épicos**: as tarefas com `sources` incluindo `"epic"`, **agrupadas por épico** em
+  seções colapsáveis (`EpicGroups.tsx`) — cada grupo tem cabeçalho com ícone de épico,
+  título/chave do épico, contador e link para o Jira; o corpo é a tabela das tarefas
+  daquele épico. A ordem dos grupos segue `data.epics` (épicos sem tarefas são omitidos;
+  "Sem épico" por último). O alternador Tabela/Kanban só aparece na aba Tasks.
+- **Épicos nunca são listados como linha** em nenhuma aba (`isEpic(issueType)` em
+  `issue.ts` os exclui da base) — na aba Épicos eles são só o cabeçalho do grupo.
+- Ícone do tipo (`IssueTypeIcon`): épico (roxo, `Zap`) x bug (vermelho) x task (azul).
 
 ### Regra base (aplicada nas duas abas)
 - Mostra **apenas não-atribuídas ou pessoas do time**. "Não atribuída" é detectada
@@ -54,12 +60,13 @@ ordem. Ordem **lógica**, não alfabética:
 ### Layout: Tabela / Kanban
 Alternador no topo do painel (`layout`: `table` | `kanban`). Ambos consomem o mesmo
 conjunto filtrado/ordenado (`sorted`).
-- **Kanban** (`KanbanBoard.tsx`): 4 colunas — Backlog, To Do, Doing, Done — via
-  `kanbanLane(status)` (colapsa as 8 categorias; ver status.ts). Cards com chave,
-  título/link, urgência, status, responsável (e épico na aba Épicos).
-- **Done sempre visível no Kanban**: `includeDone = showDone || layout === "kanban"`.
-  O toggle "Mostrar concluídas" só afeta a Tabela; no Kanban ele é substituído pelo
-  texto "Done sempre visível".
+- **Kanban** (`KanbanBoard.tsx`, só na aba Tasks): 4 colunas — Backlog, To Do, Doing,
+  Done — via `kanbanLane(status)` (colapsa as 8 categorias; ver status.ts). Cards com
+  chave, título/link, urgência, status, responsável.
+- **Done sempre visível no Kanban**: `includeDone = showDone || kanban` (onde
+  `kanban = view === "tasks" && layout === "kanban"`). O toggle "Mostrar concluídas"
+  vale nas listas (Tabela e Épicos); no Kanban ele é substituído pelo texto "Done
+  sempre visível".
 
 ## Sustentação — `src/features/sustentacao/`
 
