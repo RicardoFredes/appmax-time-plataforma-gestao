@@ -1,0 +1,7 @@
+# O painel só pode ser embutido (iframe) dentro do backoffice autenticado.
+# `frame-ancestors` é o controle real: o navegador recusa embutir em qualquer
+# outro origin. Mantenha esta lista em sincronia com ALLOWED_ANCESTORS em
+# src/lib/embed.ts. (Não use X-Frame-Options junto: ele não suporta múltiplos
+# origins e conflitaria com o frame-ancestors.)
+/*
+  Content-Security-Policy: frame-ancestors https://backoffice.appmax.com.br https://homolog-backoffice.appmax.com.br

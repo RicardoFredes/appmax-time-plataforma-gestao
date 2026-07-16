@@ -50,10 +50,14 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   escala). O rodízio segue a ordem dos `users` por grupo, girada para começar no `inicio`
   do grupo, ancorado em `sustentacao.anchorMonday` (semana atual = slot 0). Semanas
   começam na segunda. Férias sobrepondo um turno → coberto pelo próximo do rodízio.
-- Deploy: Cloudflare Pages, projeto `appmax-time-plataforma-tarefas`. URL `*.pages.dev`
-  é **pública** e o `tasks.json` tem dados internos. O passo `wrangler pages deploy` é
-  bloqueado no modo auto (exfiltração) — o usuário roda manualmente
+- Deploy: Cloudflare Pages, projeto `appmax-time-plataforma-tarefas`. O passo `wrangler
+  pages deploy` é bloqueado no modo auto (exfiltração) — o usuário roda manualmente
   (`! pnpm exec wrangler pages deploy`).
+- **Embed-only**: o painel só renderiza dentro do iframe do backoffice autenticado. Duas
+  camadas: header `frame-ancestors` (`public/_headers`) + guarda no boot (`src/lib/embed.ts`,
+  bloqueia uso top-level; desligada em dev). A allowlist de origins vive nos **dois** em
+  sincronia. Isso protege a UI, **não** o `/api/tasks` (JSON ainda acessível direto). Ver
+  [deploy.md](docs/deploy.md).
 - Tema **Appmax** (roxo `#9b6afa`) em `src/styles/globals.css`; logo em
   `src/components/logo.tsx` (copiados de `appmax-app-frontend`).
 - Ao passar `"$VAR:sufixo"` no zsh, escape com `"${VAR}:sufixo"` (`:a` é modificador).

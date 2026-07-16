@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
+import { checkEmbed } from "@/lib/embed";
 import type { TasksData } from "@/features/tasks/types";
 
 type Page = "tarefas" | "sustentacao" | "ferias";
@@ -123,9 +124,35 @@ function ErrorState({ error }: { error: string }) {
   );
 }
 
+/** Tela exibida quando o painel é aberto fora do backoffice (sem iframe permitido). */
+function EmbedBlocked() {
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="max-w-md space-y-4 text-center">
+        <Logo variant="mark" className="mx-auto h-9" />
+        <h1 className="text-lg font-semibold tracking-tight">
+          Acesse pelo Backoffice
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Este painel só abre dentro do Backoffice Appmax. Entre em{" "}
+          <a
+            className="text-primary underline underline-offset-2"
+            href="https://backoffice.appmax.com.br"
+          >
+            backoffice.appmax.com.br
+          </a>{" "}
+          e acesse pelo menu.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   const state = useTasksData();
   const [page, navigate] = usePage();
+
+  if (checkEmbed() !== "ok") return <EmbedBlocked />;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
