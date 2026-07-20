@@ -32,8 +32,17 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   puro do rodízio + cobertura de férias; a semana corrente vem do relógio do cliente).
 - `src/features/ferias/` — `FeriasPage` (linha do tempo + lista das ausências por status,
   lê `data.sustentacao.ferias`). Helpers de nome/avatar em `src/lib/people.ts`.
+- `src/features/projetos/` — controle semanal de projetos. `projetos.json` (dados **editados
+  à mão**, bundlados no build — não vem do Jira), `types.ts`, `derive.ts` (progresso/saúde
+  atual, tendência, agrupamento por engenheiro, ordenação, `SAUDE_META`), `ProjetosPage`
+  (lista 1-por-linha + 3 visões: Por projeto, Por engenheiro, Relatório da semana),
+  `ProjetoDetalhe` (2 colunas: card progresso+on-tracking e gráfico à esquerda, histórico
+  em altura total à direita), `EvolucaoChart` (SVG, linha do progresso; pontos coloridos
+  pela saúde), `Velocimetro` (SVG, medidor semicircular do on-tracking 1–5). Há um projeto
+  fake `EX1` (id `exemplo-demonstracao`) só para demonstrar a tela preenchida — remova quando quiser.
 - `src/components/ui/` — shadcn copiado do backoffice. `src/App.tsx` — nav por hash
-  (`#/sustentacao`, `#/ferias`) entre as abas Tarefas/Sustentação/Férias; header da aba Tarefas.
+  (`#/projetos`, `#/sustentacao`, `#/ferias`) entre as abas Tarefas/Projetos/Sustentação/Férias;
+  header da aba Tarefas.
 - Gerado e gitignored: `public/data/tasks.json` (regenere com `pnpm sync`).
 
 ## Convenções e gotchas
@@ -58,6 +67,21 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   que **redireciona** uso top-level para `BACKOFFICE_PANEL_URL`; desligada em dev). A
   allowlist de origins vive nos **dois** (header + embed.ts) em sincronia. Isso protege a
   UI, **não** o `/api/tasks` (JSON ainda acessível direto). Ver [deploy.md](docs/deploy.md).
+- **Projetos**: `src/features/projetos/projetos.json` é a fonte, editada à mão e **importada
+  em build-time** (não passa pelo `sync`/Jira/KV). Atualização semanal = adicionar um objeto
+  `{ semana, progresso (0–100 acumulado), saude (1 em perigo … 5 on tracking), nota }` em
+  `registros` do projeto e fazer o deploy. Progresso/saúde/nota "atuais" = os do último
+  registro (por `semana`). Cada projeto tem `id` (slug da URL de detalhe `#/projetos/<id>`),
+  `codigo` (ID estilo Jira, ex.: "PRJ-3"), `prioridade` (1–5, peso das métricas) e `quarter`
+  (ex.: "2026-Q3"). Fica em `src/` (não em `sync/`) por causa do `composite`+`include:["src"]`
+  do tsconfig, que exige o JSON dentro da árvore type-checada. Rota de detalhe é sub-hash lida
+  na própria `ProjetosPage`; `App.tsx` casa a página pelo **primeiro segmento** do hash.
+  A visão principal filtra pelo **quarter atual** (relógio do cliente, `quarterDe`); quarters
+  passados ficam no seletor (histórico preservado). O **Relatório da semana** (para a direção) é
+  **por projeto, ordenado por prioridade** (não por engenheiro): um panorama gráfico ponderado
+  pela importância (progresso, velocímetro de saúde, barra de distribuição on-tracking) + uma
+  linha por projeto com status/on-tracking/% e a nota mais recente + a sustentação da semana no
+  rodapé (via `scheduleForAll`, dado passado por prop do `App`).
 - Tema **Appmax** (roxo `#9b6afa`) em `src/styles/globals.css`; logo em
   `src/components/logo.tsx` (copiados de `appmax-app-frontend`).
 - Ao passar `"$VAR:sufixo"` no zsh, escape com `"${VAR}:sufixo"` (`:a` é modificador).

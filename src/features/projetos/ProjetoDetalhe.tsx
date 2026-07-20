@@ -1,0 +1,216 @@
+import { useMemo } from "react";
+import {
+  differenceInCalendarDays,
+  format,
+  parseISO,
+  startOfDay,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Minus,
+  Star,
+  TrendingDown,
+  TrendingUp,
+  UserRound,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { EvolucaoChart } from "./EvolucaoChart";
+import { Velocimetro } from "./Velocimetro";
+import {
+  STATUS_META,
+  prioridadeMeta,
+  progressoAtual,
+  quarterLabel,
+  registrosOrdenados,
+  saudeAtual,
+  saudeMeta,
+  tendencia,
+} from "./derive";
+import type { Projeto } from "./types";
+
+function Delta({ value }: { value: number }) {
+  if (value === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+        <Minus className="h-3 w-3" /> 0
+      </span>
+    );
+  }
+  const up = value > 0;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
+        up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400",
+      )}
+    >
+      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {up ? "+" : ""}
+      {value}
+    </span>
+  );
+}
+
+function SaudeBadge({ saude }: { saude: number }) {
+  const m = saudeMeta(saude);
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: `${m.color}1a`, color: m.color }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: m.color }} />
+      {m.label} · {m.nivel}/5
+    </span>
+  );
+}
+
+export function ProjetoDetalhe({
+  projeto,
+  onBack,
+}: {
+  projeto: Projeto;
+  onBack: () => void;
+}) {
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const rs = useMemo(() => registrosOrdenados(projeto), [projeto]);
+  const desc = [...rs].reverse();
+  const meta = STATUS_META[projeto.status];
+  const atual = progressoAtual(projeto);
+  const trend = tendencia(projeto);
+
+  const prazo = projeto.prazo ? startOfDay(parseISO(projeto.prazo)) : null;
+  const diasPrazo = prazo ? differenceInCalendarDays(prazo, today) : null;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Button variant="ghost" size="sm" className="-ml-2 mb-2 text-muted-foreground" onClick={onBack}>
+          <ArrowLeft /> Voltar
+        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="font-mono">
+            {projeto.codigo}
+          </Badge>
+          <h1 className="text-2xl font-bold tracking-tight">{projeto.nome}</h1>
+          <Badge variant={meta.badge}>{meta.label}</Badge>
+          <span
+            className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+            title={`Importância: ${prioridadeMeta(projeto.prioridade).label}`}
+          >
+            <Star className="h-3 w-3 fill-current" />
+            Importância {prioridadeMeta(projeto.prioridade).nivel}/5
+          </span>
+          <Badge variant="outline" className="font-mono">
+            {quarterLabel(projeto.quarter)}
+          </Badge>
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <UserRound className="h-3.5 w-3.5" />
+            {projeto.engenheiroNome ?? "Sem engenheiro"}
+            {projeto.senioridade && <span className="text-xs">· {projeto.senioridade}</span>}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {prazo
+              ? `${format(prazo, "dd MMM yyyy", { locale: ptBR })}${
+                  diasPrazo !== null
+                    ? diasPrazo < 0
+                      ? ` · vencido há ${-diasPrazo}d`
+                      : ` · em ${diasPrazo}d`
+                    : ""
+                }`
+              : "sem prazo"}
+          </span>
+        </div>
+        {projeto.descricao && (
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{projeto.descricao}</p>
+        )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Coluna 1: progresso + on-tracking (card único) e gráfico */}
+        <div className="space-y-4">
+          <Card className="p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+              <div className="flex-1">
+                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Progresso atual
+                </div>
+                <div className="mt-1 flex items-end gap-2">
+                  <span className="text-3xl font-bold leading-none tabular-nums">{atual}%</span>
+                  {trend !== null && (
+                    <span className="mb-0.5">
+                      <Delta value={trend} />
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${atual}%`, backgroundColor: meta.color }}
+                  />
+                </div>
+              </div>
+              <div className="hidden w-px self-stretch bg-border sm:block" />
+              <div className="flex-1">
+                <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  On-tracking
+                </div>
+                <Velocimetro saude={saudeAtual(projeto)} />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Evolução do progresso
+            </div>
+            <EvolucaoChart registros={rs} />
+            {rs.length <= 1 && (
+              <p className="mt-2 text-center text-sm text-muted-foreground">
+                Adicione mais registros semanais para ver a curva de evolução.
+              </p>
+            )}
+          </Card>
+        </div>
+
+        {/* Coluna 2: lista dos registros (ocupa a altura total da coluna) */}
+        <Card className="flex h-full flex-col overflow-hidden">
+          <div className="border-b px-4 py-3 text-sm font-semibold tracking-tight">
+            Histórico semanal ({rs.length})
+          </div>
+          <div className="flex-1 divide-y overflow-y-auto">
+            {desc.map((r, i) => {
+              const anterior = desc[i + 1];
+              const delta = anterior ? r.progresso - anterior.progresso : null;
+              return (
+                <div key={r.semana} className="p-4">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      {format(parseISO(r.semana), "dd MMM yyyy", { locale: ptBR })}
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">{r.progresso}%</span>
+                    {delta !== null && <Delta value={delta} />}
+                    <SaudeBadge saude={r.saude} />
+                  </div>
+                  {r.nota ? (
+                    <p className="mt-1.5 text-sm text-muted-foreground">{r.nota}</p>
+                  ) : (
+                    <p className="mt-1.5 text-sm italic text-muted-foreground/60">Sem nota.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}

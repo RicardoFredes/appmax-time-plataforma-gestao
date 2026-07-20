@@ -9,16 +9,20 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
+import { ProjetosPage } from "@/features/projetos/ProjetosPage";
 import { BACKOFFICE_PANEL_URL, checkEmbed, isChromeless } from "@/lib/embed";
 import type { TasksData } from "@/features/tasks/types";
 
-type Page = "tarefas" | "sustentacao" | "ferias";
+type Page = "tarefas" | "projetos" | "sustentacao" | "ferias";
 
 /** Página atual a partir do hash da URL (linkável, sobrevive ao reload). */
 function usePage(): [Page, (p: Page) => void] {
   const read = (): Page => {
     const h = window.location.hash.replace(/^#\/?/, "");
-    return h === "sustentacao" || h === "ferias" ? h : "tarefas";
+    const seg = h.split("/")[0];
+    return seg === "projetos" || seg === "sustentacao" || seg === "ferias"
+      ? seg
+      : "tarefas";
   };
   const [page, setPage] = useState<Page>(read);
   useEffect(() => {
@@ -45,6 +49,7 @@ function TopNav({ page, onNavigate }: { page: Page; onNavigate: (p: Page) => voi
       <Tabs value={page} onValueChange={(v) => onNavigate(v as Page)}>
         <TabsList>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+          <TabsTrigger value="projetos">Projetos</TabsTrigger>
           <TabsTrigger value="sustentacao">Sustentação</TabsTrigger>
           <TabsTrigger value="ferias">Férias</TabsTrigger>
         </TabsList>
@@ -174,7 +179,9 @@ export function App() {
       {state.status === "loading" && <LoadingState />}
       {state.status === "error" && <ErrorState error={state.error} />}
       {state.status === "ready" &&
-        (page === "sustentacao" ? (
+        (page === "projetos" ? (
+          <ProjetosPage sustentacao={state.data.sustentacao} />
+        ) : page === "sustentacao" ? (
           <SustentacaoPage data={state.data.sustentacao} />
         ) : page === "ferias" ? (
           <FeriasPage data={state.data.sustentacao} />

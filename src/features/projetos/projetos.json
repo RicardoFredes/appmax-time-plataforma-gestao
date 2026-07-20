@@ -1,0 +1,379 @@
+{
+  "$doc": "Controle semanal de projetos (uso pessoal, editado à mão). Toda semana, adicione um item em `registros` de cada projeto com { semana (segunda-feira YYYY-MM-DD), progresso (0–100, acumulado), saude (1 em perigo … 5 on tracking), nota }. O progresso, a saúde e a nota 'atuais' são sempre os do último registro. Depois de editar, faça o deploy (o arquivo é bundlado no build). `id` é o slug usado na URL de detalhe (#/projetos/<id>) e `codigo` é o ID de exibição estilo Jira. `prioridade` (1 mínima … 5 máxima) pondera as métricas gerais. `quarter` (ex.: 2026-Q3) agrupa o projeto; a visão principal mostra o quarter atual (pelo relógio) e os quarters passados seguem acessíveis no seletor. Identidade do engenheiro por e-mail (casa com sync/config.json); engenheiroNome é só para exibição. Projeto sem engenheiro: engenheiroEmail e engenheiroNome = null. status: discovery | refinamento | em_andamento | em_testes | bloqueado | pausado | concluido.",
+  "projetos": [
+    {
+      "id": "exemplo-demonstracao",
+      "codigo": "DEMO-1",
+      "nome": "Exemplo — Projeto de Demonstração",
+      "engenheiroEmail": "exemplo@appmax.com.br",
+      "engenheiroNome": "Fulano de Exemplo",
+      "senioridade": "III - Pleno",
+      "prazo": "2026-08-14",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Projeto FICTÍCIO, só para mostrar a tela de detalhe preenchida (gráfico, velocímetro e histórico). Pode remover este item quando quiser.",
+      "registros": [
+        { "semana": "2026-06-08", "progresso": 8, "saude": 3, "nota": "Kickoff e alinhamento de escopo com produto." },
+        { "semana": "2026-06-15", "progresso": 20, "saude": 4, "nota": "Primeiras telas e contratos de API definidos." },
+        { "semana": "2026-06-22", "progresso": 32, "saude": 4, "nota": "Fluxo principal implementado no frontend." },
+        { "semana": "2026-06-29", "progresso": 38, "saude": 2, "nota": "Bloqueio: dependência de outra squad atrasou a API." },
+        { "semana": "2026-07-06", "progresso": 55, "saude": 3, "nota": "Desbloqueado; integração retomada." },
+        { "semana": "2026-07-13", "progresso": 72, "saude": 5, "nota": "Integração concluída, entrando em ajustes finos." },
+        { "semana": "2026-07-20", "progresso": 85, "saude": 4, "nota": "QA em andamento, poucos ajustes pendentes." }
+      ]
+    },
+    {
+      "id": "crm-nova-ui-ux",
+      "codigo": "PRJ-1",
+      "nome": "CRM - Nova UI/UX",
+      "engenheiroEmail": "bruno.schneider@appmax.com.br",
+      "engenheiroNome": "Bruno Schneider",
+      "senioridade": "II - Quase pleno",
+      "prazo": null,
+      "status": "refinamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Aguardando ajustes de UX para começar.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Aguardando ajustes de UX para começar." }
+      ]
+    },
+    {
+      "id": "med-2-backoffice",
+      "codigo": "PRJ-2",
+      "nome": "MED 2.0 - Backoffice",
+      "engenheiroEmail": "witerlland.silva@appmax.com.br",
+      "engenheiroNome": "Witerlland Silva",
+      "senioridade": "IV - Quase sênior",
+      "prazo": "2026-08-07",
+      "status": "em_andamento",
+      "prioridade": 4,
+      "quarter": "2026-Q3",
+      "descricao": "Fase 1: ajustes na UX. Fase 2: integração com as APIs.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "med-2-app",
+      "codigo": "PRJ-3",
+      "nome": "MED 2.0 - App",
+      "engenheiroEmail": "ian.oliveira@appmax.com.br",
+      "engenheiroNome": "Ian Oliveira",
+      "senioridade": "V - Sênior",
+      "prazo": "2026-07-24",
+      "status": "em_andamento",
+      "prioridade": 5,
+      "quarter": "2026-Q3",
+      "descricao": "Regulatório.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "maxip-migracao-contas",
+      "codigo": "PRJ-4",
+      "nome": "MaxIP - Migração de contas",
+      "engenheiroEmail": "joao.justo@appmax.com.br",
+      "engenheiroNome": "João Justo",
+      "senioridade": "Staff",
+      "prazo": "2026-08-31",
+      "status": "em_andamento",
+      "prioridade": 4,
+      "quarter": "2026-Q3",
+      "descricao": "Migração de contas.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "maxip-validacao-facial",
+      "codigo": "PRJ-5",
+      "nome": "MaxIP - Validação Facial",
+      "engenheiroEmail": "joao.justo@appmax.com.br",
+      "engenheiroNome": "João Justo",
+      "senioridade": "Staff",
+      "prazo": null,
+      "status": "refinamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Ainda em fase de refinamento.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
+      ]
+    },
+    {
+      "id": "maxip-cabine-onboarding",
+      "codigo": "PRJ-6",
+      "nome": "MaxIP - Cabine Onboarding",
+      "engenheiroEmail": "felipe.carvalho@appmax.com.br",
+      "engenheiroNome": "Felipe Carvalho",
+      "senioridade": "II - Quase pleno",
+      "prazo": null,
+      "status": "refinamento",
+      "prioridade": 2,
+      "quarter": "2026-Q3",
+      "descricao": "Ainda em fase de refinamento.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
+      ]
+    },
+    {
+      "id": "maxip-gestao-contas",
+      "codigo": "PRJ-7",
+      "nome": "MaxIP - Gestão de Contas",
+      "engenheiroEmail": "bruno.schneider@appmax.com.br",
+      "engenheiroNome": "Bruno Schneider",
+      "senioridade": "II - Quase pleno",
+      "prazo": null,
+      "status": "refinamento",
+      "prioridade": 2,
+      "quarter": "2026-Q3",
+      "descricao": "Ainda em fase de refinamento.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
+      ]
+    },
+    {
+      "id": "tap-to-pay-v0",
+      "codigo": "PRJ-8",
+      "nome": "Tap to pay V0",
+      "engenheiroEmail": "diogo.januario@appmax.com.br",
+      "engenheiroNome": "Diogo Januário",
+      "senioridade": "IV - Quase sênior",
+      "prazo": "2026-07-24",
+      "status": "em_andamento",
+      "prioridade": 4,
+      "quarter": "2026-Q3",
+      "descricao": "Frontend do aplicativo da Appmax; algumas entregas serão feitas antes.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "app-nova-home-max",
+      "codigo": "PRJ-9",
+      "nome": "App - Nova Home do Max",
+      "engenheiroEmail": "ian.oliveira@appmax.com.br",
+      "engenheiroNome": "Ian Oliveira",
+      "senioridade": "V - Sênior",
+      "prazo": "2026-07-28",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "O prazo pode mudar, a depender das tratativas com UX.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "app-nova-ui-ux",
+      "codigo": "PRJ-10",
+      "nome": "App - Nova UI/UX",
+      "engenheiroEmail": "ian.oliveira@appmax.com.br",
+      "engenheiroNome": "Ian Oliveira",
+      "senioridade": "V - Sênior",
+      "prazo": null,
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Aplicação do novo DS e melhorias de jornadas.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "cartao-credito-chargeback",
+      "codigo": "PRJ-11",
+      "nome": "Cartão de crédito - Chargeback",
+      "engenheiroEmail": "felipe.carvalho@appmax.com.br",
+      "engenheiroNome": "Felipe Carvalho",
+      "senioridade": "II - Quase pleno",
+      "prazo": "2026-08-05",
+      "status": "em_testes",
+      "prioridade": 4,
+      "quarter": "2026-Q3",
+      "descricao": "Em fase de testes e ajustes. O prazo depende dos testes e da disponibilidade do cartão de crédito.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Em fase de testes e ajustes." }
+      ]
+    },
+    {
+      "id": "admin-relatorios",
+      "codigo": "PRJ-12",
+      "nome": "Admin - Relatórios",
+      "engenheiroEmail": null,
+      "engenheiroNome": null,
+      "senioridade": null,
+      "prazo": null,
+      "status": "discovery",
+      "prioridade": 2,
+      "quarter": "2026-Q3",
+      "descricao": "Ainda em fase de discovery.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
+      ]
+    },
+    {
+      "id": "admin-unificacao-fluxo-saques",
+      "codigo": "PRJ-13",
+      "nome": "Admin - Unificação Fluxo Análise de Saques",
+      "engenheiroEmail": null,
+      "engenheiroNome": null,
+      "senioridade": null,
+      "prazo": null,
+      "status": "discovery",
+      "prioridade": 2,
+      "quarter": "2026-Q3",
+      "descricao": "Ainda em fase de discovery.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
+      ]
+    },
+    {
+      "id": "admin-raio-x-parceiro",
+      "codigo": "PRJ-14",
+      "nome": "Admin - Raio-x do parceiro",
+      "engenheiroEmail": null,
+      "engenheiroNome": null,
+      "senioridade": null,
+      "prazo": null,
+      "status": "discovery",
+      "prioridade": 2,
+      "quarter": "2026-Q3",
+      "descricao": "Ainda em fase de discovery.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
+      ]
+    },
+    {
+      "id": "admin-internacionalizacao-onboarding",
+      "codigo": "PRJ-15",
+      "nome": "Admin - Internacionalização - Onboarding",
+      "engenheiroEmail": "felipe.carvalho@appmax.com.br",
+      "engenheiroNome": "Felipe Carvalho",
+      "senioridade": "II - Quase pleno",
+      "prazo": "2026-08-20",
+      "status": "em_testes",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Em fase de testes e ajustes.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Em fase de testes e ajustes." }
+      ]
+    },
+    {
+      "id": "admin-combo-cs-witerlland",
+      "codigo": "PRJ-16",
+      "nome": "Admin - Combo de melhorias de CS (Pedidos e estornos)",
+      "engenheiroEmail": "witerlland.silva@appmax.com.br",
+      "engenheiroNome": "Witerlland Silva",
+      "senioridade": "IV - Quase sênior",
+      "prazo": "2026-07-17",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Pedidos e estornos, Configurações.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "admin-combo-cs-jose",
+      "codigo": "PRJ-17",
+      "nome": "Admin - Combo de melhorias de CS (Saque e contas bancárias)",
+      "engenheiroEmail": "jose.chagury@appmax.com.br",
+      "engenheiroNome": "José Chagury",
+      "senioridade": "I - Júnior",
+      "prazo": "2026-08-07",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Saque e contas bancárias. O prazo pode mudar, pois depende do refinamento de produto.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "migracao-vue3-tickets",
+      "codigo": "PRJ-18",
+      "nome": "Migração Vue 3 - Tickets",
+      "engenheiroEmail": "felipe.carvalho@appmax.com.br",
+      "engenheiroNome": "Felipe Carvalho",
+      "senioridade": "II - Quase pleno",
+      "prazo": "2026-09-25",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q3",
+      "descricao": "Migração de Tickets para Vue 3.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "migracao-vue3-estornos",
+      "codigo": "PRJ-19",
+      "nome": "Migração Vue 3 - Estornos",
+      "engenheiroEmail": "witerlland.silva@appmax.com.br",
+      "engenheiroNome": "Witerlland Silva",
+      "senioridade": "IV - Quase sênior",
+      "prazo": "2026-10-09",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q4",
+      "descricao": "Migração de Estornos para Vue 3.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "telemetria-otel",
+      "codigo": "PRJ-20",
+      "nome": "Telemetria Otel",
+      "engenheiroEmail": "joao.justo@appmax.com.br",
+      "engenheiroNome": "João Justo",
+      "senioridade": "Staff",
+      "prazo": "2026-10-30",
+      "status": "em_andamento",
+      "prioridade": 4,
+      "quarter": "2026-Q4",
+      "descricao": "Após o deploy em produção, implementar nos Clients.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "admin-nova-ui-ux",
+      "codigo": "PRJ-21",
+      "nome": "Admin - Nova UI/UX",
+      "engenheiroEmail": "joao.justo@appmax.com.br",
+      "engenheiroNome": "João Justo",
+      "senioridade": "Staff",
+      "prazo": "2026-12-04",
+      "status": "em_andamento",
+      "prioridade": 4,
+      "quarter": "2026-Q4",
+      "descricao": "Fase 1: provisionamento de ambiente. Fase 2: base comum. Fase 3: módulo piloto CRM.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    },
+    {
+      "id": "ib-apartar-frontend",
+      "codigo": "PRJ-22",
+      "nome": "IB - Apartar Frontend",
+      "engenheiroEmail": "joao.justo@appmax.com.br",
+      "engenheiroNome": "João Justo",
+      "senioridade": "Staff",
+      "prazo": "2026-10-23",
+      "status": "em_andamento",
+      "prioridade": 3,
+      "quarter": "2026-Q4",
+      "descricao": "Apartar o frontend do IB.",
+      "registros": [
+        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+      ]
+    }
+  ]
+}
