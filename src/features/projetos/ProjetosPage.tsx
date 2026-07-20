@@ -237,7 +237,7 @@ interface Metricas {
 function computeMetricas(projetos: Projeto[], today: Date): Metricas {
   const venc = (p: Projeto) =>
     p.prazo &&
-    p.status !== "concluido" &&
+    p.status !== "done" &&
     differenceInCalendarDays(startOfDay(parseISO(p.prazo)), today) < 0;
   const mediaSimples = projetos.length
     ? Math.round(projetos.reduce((s, p) => s + progressoAtual(p), 0) / projetos.length)
@@ -777,9 +777,9 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
 
   const stats = useMemo(() => {
     const emAndamento = projetos.filter(
-      (p) => p.status === "em_andamento" || p.status === "em_testes",
+      (p) => p.status === "in_progress" || p.status === "testing",
     ).length;
-    const concluidos = projetos.filter((p) => p.status === "concluido").length;
+    const concluidos = projetos.filter((p) => p.status === "done").length;
     const semana =
       projetos
         .flatMap((p) => p.registros.map((r) => r.semana))

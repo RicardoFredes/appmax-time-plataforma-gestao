@@ -4,13 +4,13 @@ import type { Projeto, ProjetoStatus, RegistroSemanal } from "./types";
 
 /** Ordem lógica dos status (não alfabética). */
 export const STATUS_ORDER: ProjetoStatus[] = [
-  "em_andamento",
-  "em_testes",
-  "refinamento",
+  "in_progress",
+  "testing",
+  "refinement",
   "discovery",
-  "bloqueado",
-  "pausado",
-  "concluido",
+  "blocked",
+  "paused",
+  "done",
 ];
 
 export const STATUS_META: Record<
@@ -18,12 +18,12 @@ export const STATUS_META: Record<
   { label: string; color: string; badge: "default" | "info" | "secondary" | "destructive" | "warning" | "success" }
 > = {
   discovery: { label: "Discovery", color: "#94a3b8", badge: "secondary" }, // slate
-  refinamento: { label: "Refinamento", color: "#a78bfa", badge: "default" }, // violet
-  em_andamento: { label: "Em andamento", color: "#9b6afa", badge: "default" }, // roxo Appmax
-  em_testes: { label: "Em testes", color: "#0ea5e9", badge: "info" }, // sky
-  bloqueado: { label: "Bloqueado", color: "#ef4444", badge: "destructive" }, // red
-  pausado: { label: "Pausado", color: "#f59e0b", badge: "warning" }, // amber
-  concluido: { label: "Concluído", color: "#10b981", badge: "success" }, // emerald
+  refinement: { label: "Refinement", color: "#a78bfa", badge: "default" }, // violet
+  in_progress: { label: "In Progress", color: "#9b6afa", badge: "default" }, // roxo Appmax
+  testing: { label: "Testing", color: "#0ea5e9", badge: "info" }, // sky
+  blocked: { label: "Blocked", color: "#ef4444", badge: "destructive" }, // red
+  paused: { label: "Paused", color: "#f59e0b", badge: "warning" }, // amber
+  done: { label: "Done", color: "#10b981", badge: "success" }, // emerald
 };
 
 /** Quarter (ex.: "2026-Q3") de uma data. */
@@ -90,9 +90,13 @@ export function progressoAtual(p: Projeto): number {
   return ultimoRegistro(p)?.progresso ?? 0;
 }
 
-/** Saúde atual (1–5), 3 (neutra) se não houver registro. */
+/** Saúde atual (1–5), do último registro real; 3 (neutra) se só houver marcos. */
 export function saudeAtual(p: Projeto): number {
-  return ultimoRegistro(p)?.saude ?? 3;
+  const rs = registrosOrdenados(p);
+  for (let i = rs.length - 1; i >= 0; i--) {
+    if (!rs[i].marco) return rs[i].saude;
+  }
+  return 3;
 }
 
 /**
@@ -100,7 +104,8 @@ export function saudeAtual(p: Projeto): number {
  * menos de dois registros (sem base de comparação ainda).
  */
 export function tendencia(p: Projeto): number | null {
-  const rs = registrosOrdenados(p);
+  // Marcos (início/fim) não são medições semanais — não contam na variação.
+  const rs = registrosOrdenados(p).filter((r) => !r.marco);
   if (rs.length < 2) return null;
   return rs[rs.length - 1].progresso - rs[rs.length - 2].progresso;
 }

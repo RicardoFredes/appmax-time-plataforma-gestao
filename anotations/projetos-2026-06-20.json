@@ -1,5 +1,5 @@
 {
-  "$doc": "Controle semanal de projetos (uso pessoal, editado à mão). Toda semana, adicione um item em `registros` de cada projeto com { semana (segunda-feira YYYY-MM-DD), progresso (0–100, acumulado), saude (1 em perigo … 5 on tracking), nota }. O progresso, a saúde e a nota 'atuais' são sempre os do último registro. Depois de editar, faça o deploy (o arquivo é bundlado no build). `id` é o slug usado na URL de detalhe (#/projetos/<id>) e `codigo` é o ID de exibição estilo Jira. `prioridade` (1 mínima … 5 máxima) pondera as métricas gerais. `quarter` (ex.: 2026-Q3) agrupa o projeto; a visão principal mostra o quarter atual (pelo relógio) e os quarters passados seguem acessíveis no seletor. Datas (YYYY-MM-DD, ou null): `inicio` (data de início), `prazo` (previsão de término), `fechamento` (data de fechamento real, null enquanto aberto). Identidade do engenheiro por e-mail (casa com sync/config.json); engenheiroNome é só para exibição. Projeto sem engenheiro: engenheiroEmail e engenheiroNome = null. status: discovery | refinement | in_progress | testing | blocked | paused | done. Um registro pode ter `marco` ('inicio' | 'fim'): demarca o início/fim do projeto — sem saúde/on-tracking (a `saude` é ignorada) e com ícone de bandeira no histórico e no gráfico.",
+  "$doc": "Controle semanal de projetos (uso pessoal, editado à mão). Toda semana, adicione um item em `registros` de cada projeto com { semana (segunda-feira YYYY-MM-DD), progresso (0–100, acumulado), saude (1 em perigo … 5 on tracking), nota }. O progresso, a saúde e a nota 'atuais' são sempre os do último registro. Depois de editar, faça o deploy (o arquivo é bundlado no build). `id` é o slug usado na URL de detalhe (#/projetos/<id>) e `codigo` é o ID de exibição estilo Jira. `prioridade` (1 mínima … 5 máxima) pondera as métricas gerais. `quarter` (ex.: 2026-Q3) agrupa o projeto; a visão principal mostra o quarter atual (pelo relógio) e os quarters passados seguem acessíveis no seletor. Datas (YYYY-MM-DD, ou null): `inicio` (data de início), `prazo` (previsão de término), `fechamento` (data de fechamento real, null enquanto aberto). Identidade do engenheiro por e-mail (casa com sync/config.json); engenheiroNome é só para exibição. Projeto sem engenheiro: engenheiroEmail e engenheiroNome = null. status: discovery | refinamento | em_andamento | em_testes | bloqueado | pausado | concluido.",
   "projetos": [
     {
       "id": "crm-nova-ui-ux",
@@ -10,7 +10,7 @@
       "inicio": null,
       "prazo": "2026-11-13",
       "fechamento": null,
-      "status": "paused",
+      "status": "pausado",
       "prioridade": 2,
       "quarter": "2026-Q3",
       "descricao": "Aguardando ajustes de UX para começar",
@@ -27,12 +27,11 @@
       "inicio": "2026-07-17",
       "prazo": "2026-08-07",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 5,
       "quarter": "2026-Q3",
       "descricao": "Fase 1: ajustes na UX. Fase 2: integração com as APIs.",
       "registros": [
-        { "semana": "2026-07-17", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
         { "semana": "2026-07-20", "progresso": 5, "saude": 4, "nota": "Iniciado o trabalho de frontend, que compreende: ajustes pontuais na jornada e integração com as APIs." }
       ]
     },
@@ -45,7 +44,7 @@
       "inicio": null,
       "prazo": "2026-07-24",
       "fechamento": null,
-      "status": "paused",
+      "status": "pausado",
       "prioridade": 5,
       "quarter": "2026-Q3",
       "descricao": "Regulatório.",
@@ -62,12 +61,11 @@
       "inicio": "2026-07-10",
       "prazo": "2026-08-31",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 5,
       "quarter": "2026-Q3",
       "descricao": "Migração de contas.",
       "registros": [
-        { "semana": "2026-07-10", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
         { "semana": "2026-07-20", "progresso": 50, "saude": 5, "nota": "Frontend do backoffice está pronto e com 80% das APIs integradas. JJ saiu de férias e repassou o contexto para o Felipe assumir." }
       ]
     },
@@ -80,7 +78,7 @@
       "inicio": null,
       "prazo": null,
       "fechamento": null,
-      "status": "refinement",
+      "status": "refinamento",
       "prioridade": 4,
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de refinamento. https://tecnologia-appmax.atlassian.net/wiki/spaces/PEPT/pages/2557673478/Proposta+Cross+Servi+o+de+Valida+o+Facial",
@@ -97,7 +95,7 @@
       "inicio": null,
       "prazo": null,
       "fechamento": null,
-      "status": "refinement",
+      "status": "refinamento",
       "prioridade": 5,
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de refinamento. https://tecnologia-appmax.atlassian.net/wiki/spaces/PEPT/pages/2592768001/Backoffice+Max+Onboarding",
@@ -114,7 +112,7 @@
       "inicio": null,
       "prazo": null,
       "fechamento": null,
-      "status": "refinement",
+      "status": "refinamento",
       "prioridade": 5,
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de refinamento. https://tecnologia-appmax.atlassian.net/wiki/spaces/PEPT/pages/2593161217/Backoffice+Max+Conta+e+Transa+es",
@@ -131,7 +129,7 @@
       "inicio": null,
       "prazo": "2026-07-24",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 4,
       "quarter": "2026-Q3",
       "descricao": "Frontend do aplicativo da Appmax; algumas entregas serão feitas antes.",
@@ -148,12 +146,11 @@
       "inicio": "2026-06-26",
       "prazo": "2026-07-28",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 4,
       "quarter": "2026-Q3",
       "descricao": "Novo Design System para o aplicativo",
       "registros": [
-        { "semana": "2026-06-26", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
         { "semana": "2026-07-20", "progresso": 95, "saude": 5, "nota": "Após revisão da Home e ajustes finos, estamos com tudo pronto e com expectativa de lançamento nas lojas para essa quarta (22/07)." }
       ]
     },
@@ -166,12 +163,11 @@
       "inicio": "2026-06-26",
       "prazo": "2026-10-30",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 3,
       "quarter": "2026-Q3",
       "descricao": "Aplicação do novo DS e melhorias de jornadas.",
       "registros": [
-        { "semana": "2026-06-26", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
         { "semana": "2026-07-20", "progresso": 30, "saude": 5, "nota": "Já estão com a nova UI/UX: configurações, Área Pix e suas jornadas, Chat, Limites, Fazer Pix, Boletos. Também entrou o Indicar Amigos, pois o Ian implementou a API no backend " }
       ]
     },
@@ -184,12 +180,11 @@
       "inicio": "2026-05-04",
       "prazo": "2026-08-05",
       "fechamento": null,
-      "status": "testing",
+      "status": "em_testes",
       "prioridade": 4,
       "quarter": "2026-Q3",
       "descricao": "Em fase de testes e ajustes. O prazo depende dos testes e da disponibilidade do cartão de crédito.",
       "registros": [
-        { "semana": "2026-05-04", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
         { "semana": "2026-07-20", "progresso": 95, "saude": 4, "nota": "Aguardando o time de Risco finalizar os testes em ambiente de homologação. Ainda falta o time de SRE provisionar o BFF de produção" }
       ]
     },
@@ -253,7 +248,7 @@
       "inicio": null,
       "prazo": "2026-08-20",
       "fechamento": null,
-      "status": "testing",
+      "status": "em_testes",
       "prioridade": 3,
       "quarter": "2026-Q3",
       "descricao": "Em fase de testes e ajustes.",
@@ -270,12 +265,11 @@
       "inicio": "2026-07-02",
       "prazo": "2026-07-24",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 3,
       "quarter": "2026-Q3",
       "descricao": "Pedidos e estornos, Configurações.",
       "registros": [
-        { "semana": "2026-07-02", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
         { "semana": "2026-07-20", "progresso": 85, "saude": 4, "nota": "Boa parte já foi entregue, mas duas tarefas ainda estão em aberto: status de estornos (time de produto está revisando); equipe produtor (falta testes)." }
       ]
     },
@@ -288,7 +282,7 @@
       "inicio": null,
       "prazo": null,
       "fechamento": null,
-      "status": "refinement",
+      "status": "refinamento",
       "prioridade": 3,
       "quarter": "2026-Q3",
       "descricao": "Saque e contas bancárias. O prazo pode mudar, pois depende do refinamento de produto.",
@@ -305,7 +299,7 @@
       "inicio": null,
       "prazo": "2026-09-25",
       "fechamento": null,
-      "status": "paused",
+      "status": "pausado",
       "prioridade": 1,
       "quarter": "2026-Q3",
       "descricao": "Migração de Tickets para Vue 3.",
@@ -322,7 +316,7 @@
       "inicio": null,
       "prazo": "2026-10-09",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 3,
       "quarter": "2026-Q4",
       "descricao": "Migração de Estornos para Vue 3.",
@@ -339,7 +333,7 @@
       "inicio": null,
       "prazo": "2026-10-30",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 4,
       "quarter": "2026-Q4",
       "descricao": "Após o deploy em produção, implementar nos Clients.",
@@ -356,7 +350,7 @@
       "inicio": null,
       "prazo": "2026-12-04",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 4,
       "quarter": "2026-Q4",
       "descricao": "Fase 1: provisionamento de ambiente. Fase 2: base comum. Fase 3: módulo piloto CRM.",
@@ -373,7 +367,7 @@
       "inicio": null,
       "prazo": "2026-10-23",
       "fechamento": null,
-      "status": "in_progress",
+      "status": "em_andamento",
       "prioridade": 3,
       "quarter": "2026-Q4",
       "descricao": "Apartar o frontend do IB.",

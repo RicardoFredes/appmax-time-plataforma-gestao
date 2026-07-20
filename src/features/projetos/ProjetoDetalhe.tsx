@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft,
   CalendarDays,
+  Flag,
   Minus,
   TrendingDown,
   TrendingUp,
@@ -30,6 +31,7 @@ import {
   tendencia,
 } from "./derive";
 import { Prioridade } from "./Prioridade";
+import { Linkify } from "./Linkify";
 import type { Projeto } from "./types";
 
 function Delta({ value }: { value: number }) {
@@ -54,6 +56,12 @@ function Delta({ value }: { value: number }) {
     </span>
   );
 }
+
+/** Metadados de exibição dos marcos (registros de início/fim do projeto). */
+const MARCO_META = {
+  inicio: { label: "Início do projeto", color: "#9b6afa" }, // roxo Appmax
+  fim: { label: "Fim do projeto", color: "#10b981" }, // emerald (done)
+} as const;
 
 function SaudeBadge({ saude }: { saude: number }) {
   const m = saudeMeta(saude);
@@ -130,7 +138,9 @@ export function ProjetoDetalhe({
           </span>
         </div>
         {projeto.descricao && (
-          <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{projeto.descricao}</p>
+          <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
+            <Linkify texto={projeto.descricao} />
+          </p>
         )}
       </div>
 
@@ -189,22 +199,37 @@ export function ProjetoDetalhe({
           </div>
           <div className="flex-1 divide-y overflow-y-auto">
             {desc.map((r, i) => {
-              const anterior = desc[i + 1];
+              const m = r.marco ? MARCO_META[r.marco] : null;
+              // Delta semana-a-semana ignora marcos (não são medições).
+              const anterior = m ? undefined : desc.slice(i + 1).find((x) => !x.marco);
               const delta = anterior ? r.progresso - anterior.progresso : null;
               return (
                 <div key={r.semana} className="p-4">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      {m ? (
+                        <Flag className="h-3.5 w-3.5" style={{ color: m.color }} />
+                      ) : (
+                        <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
                       {format(parseISO(r.semana), "dd MMM yyyy", { locale: ptBR })}
                     </span>
                     <span className="text-sm font-semibold tabular-nums">{r.progresso}%</span>
                     {delta !== null && <Delta value={delta} />}
-                    <SaudeBadge saude={r.saude} />
+                    {/* Marcos (início/fim) não têm on-tracking: exibem o rótulo do marco. */}
+                    {m ? (
+                      <span className="text-xs font-medium" style={{ color: m.color }}>
+                        {m.label}
+                      </span>
+                    ) : (
+                      <SaudeBadge saude={r.saude} />
+                    )}
                   </div>
                   {r.nota ? (
-                    <p className="mt-1.5 text-sm text-muted-foreground">{r.nota}</p>
-                  ) : (
+                    <p className="mt-1.5 text-sm text-muted-foreground">
+                      <Linkify texto={r.nota} />
+                    </p>
+                  ) : m ? null : (
                     <p className="mt-1.5 text-sm italic text-muted-foreground/60">Sem nota.</p>
                   )}
                 </div>

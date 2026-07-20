@@ -416,7 +416,7 @@ export function ProjetosEditor({ onBack }: { onBack: () => void }) {
       inicio: null,
       prazo: null,
       fechamento: null,
-      status: "em_andamento",
+      status: "in_progress",
       prioridade: 3,
       quarter: quarterFiltro === "todos" ? quarterAtual : quarterFiltro,
       descricao: "",

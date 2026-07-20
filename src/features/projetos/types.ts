@@ -2,12 +2,12 @@
 
 export type ProjetoStatus =
   | "discovery"
-  | "refinamento"
-  | "em_andamento"
-  | "em_testes"
-  | "bloqueado"
-  | "pausado"
-  | "concluido";
+  | "refinement"
+  | "in_progress"
+  | "testing"
+  | "blocked"
+  | "paused"
+  | "done";
 
 /** Um registro semanal de evolução (adicionado toda semana à mão). */
 export interface RegistroSemanal {
@@ -15,10 +15,15 @@ export interface RegistroSemanal {
   semana: string;
   /** Progresso acumulado, 0–100. */
   progresso: number;
-  /** Saúde do projeto: 1 (em perigo) a 5 (on tracking). */
+  /** Saúde do projeto: 1 (em perigo) a 5 (on tracking). Ignorada em marcos. */
   saude: number;
   /** Nota livre sobre como andou o projeto na semana. */
   nota: string;
+  /**
+   * Demarcação opcional: registro de **início** ou **fim** do projeto. Marcos
+   * não têm saúde/on-tracking (a `saude` é ignorada) e recebem ícone de bandeira.
+   */
+  marco?: "inicio" | "fim";
 }
 
 export interface Projeto {

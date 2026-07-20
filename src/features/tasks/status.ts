@@ -1,43 +1,45 @@
 /**
- * Normalização de status do Jira em categorias amigáveis (pt-BR).
+ * Normalização de status do Jira em categorias internas (chaves em inglês,
+ * padronizadas com Projetos — ver src/features/projetos/derive.ts).
  * Paleta coesa (tons Tailwind) alinhada ao tema roxo da Appmax:
  * - `solid`: cor cheia (ticker, bolinhas do Kanban);
  * - `bg`/`text`: badge "soft" (fundo tinto claro + texto forte), calmo no tema neutro.
- * Progressão fria → ativa → concluída.
+ * Progressão fria → ativa → concluída. O texto por tarefa exibido na UI é o status
+ * **cru do Jira** (`Task.status`); estas categorias servem à cor/ordenação/lanes.
  */
 
 export type StatusKey =
-  | "Backlog"
-  | "A fazer"
-  | "Em progresso"
-  | "Em revisão"
-  | "Em teste"
-  | "Bloqueado"
-  | "Concluído"
-  | "Outro";
+  | "backlog"
+  | "todo"
+  | "in_progress"
+  | "in_review"
+  | "testing"
+  | "blocked"
+  | "done"
+  | "other";
 
 export const STATUS_ORDER: StatusKey[] = [
-  "Backlog",
-  "A fazer",
-  "Em progresso",
-  "Em revisão",
-  "Em teste",
-  "Bloqueado",
-  "Concluído",
-  "Outro",
+  "backlog",
+  "todo",
+  "in_progress",
+  "in_review",
+  "testing",
+  "blocked",
+  "done",
+  "other",
 ];
 
-type ColorSet = { solid: string; bg: string; text: string };
+type ColorSet = { label: string; solid: string; bg: string; text: string };
 
 export const STATUS_META: Record<StatusKey, ColorSet> = {
-  Backlog: { solid: "#64748b", bg: "#f1f5f9", text: "#475569" }, // slate
-  "A fazer": { solid: "#0ea5e9", bg: "#e0f2fe", text: "#0369a1" }, // sky
-  "Em progresso": { solid: "#6366f1", bg: "#e0e7ff", text: "#4338ca" }, // indigo
-  "Em revisão": { solid: "#8b5cf6", bg: "#ede9fe", text: "#6d28d9" }, // violet (marca)
-  "Em teste": { solid: "#f59e0b", bg: "#fef3c7", text: "#b45309" }, // amber
-  Bloqueado: { solid: "#ef4444", bg: "#fee2e2", text: "#b91c1c" }, // red
-  Concluído: { solid: "#10b981", bg: "#d1fae5", text: "#047857" }, // emerald
-  Outro: { solid: "#a1a1aa", bg: "#f4f4f5", text: "#52525b" }, // zinc
+  backlog: { label: "Backlog", solid: "#64748b", bg: "#f1f5f9", text: "#475569" }, // slate
+  todo: { label: "To Do", solid: "#0ea5e9", bg: "#e0f2fe", text: "#0369a1" }, // sky
+  in_progress: { label: "In Progress", solid: "#6366f1", bg: "#e0e7ff", text: "#4338ca" }, // indigo
+  in_review: { label: "In Review", solid: "#8b5cf6", bg: "#ede9fe", text: "#6d28d9" }, // violet (marca)
+  testing: { label: "Testing", solid: "#f59e0b", bg: "#fef3c7", text: "#b45309" }, // amber
+  blocked: { label: "Blocked", solid: "#ef4444", bg: "#fee2e2", text: "#b91c1c" }, // red
+  done: { label: "Done", solid: "#10b981", bg: "#d1fae5", text: "#047857" }, // emerald
+  other: { label: "Other", solid: "#a1a1aa", bg: "#f4f4f5", text: "#52525b" }, // zinc
 };
 
 /** Cor cheia por categoria (ticker, bolinhas). */
@@ -47,16 +49,16 @@ export const STATUS_COLORS: Record<StatusKey, string> = Object.fromEntries(
 
 export function statusCategory(rawStatus: string): StatusKey {
   const s = (rawStatus || "").toString().toLowerCase();
-  if (/done|conclu|finaliz/.test(s)) return "Concluído";
-  if (/review|revis/.test(s)) return "Em revisão";
-  if (/test|valida|homolog/.test(s)) return "Em teste";
+  if (/done|conclu|finaliz/.test(s)) return "done";
+  if (/review|revis/.test(s)) return "in_review";
+  if (/test|valida|homolog/.test(s)) return "testing";
   if (/progress|execu|desenvolv|building|andamento|doing/.test(s))
-    return "Em progresso";
-  if (/bloque|block|imped/.test(s)) return "Bloqueado";
-  if (/backlog/.test(s)) return "Backlog";
+    return "in_progress";
+  if (/bloque|block|imped/.test(s)) return "blocked";
+  if (/backlog/.test(s)) return "backlog";
   if (/to do|a fazer|abert|planej|defini|selected|todo/.test(s))
-    return "A fazer";
-  return "Outro";
+    return "todo";
+  return "other";
 }
 
 export function statusColor(rawStatus: string): string {
@@ -83,21 +85,21 @@ export const KANBAN_LANES: {
   label: string;
   color: string;
 }[] = [
-  { id: "backlog", label: "Backlog", color: STATUS_META["Backlog"].solid },
-  { id: "todo", label: "To Do", color: STATUS_META["A fazer"].solid },
-  { id: "doing", label: "Doing", color: STATUS_META["Em progresso"].solid },
-  { id: "done", label: "Done", color: STATUS_META["Concluído"].solid },
+  { id: "backlog", label: "Backlog", color: STATUS_META.backlog.solid },
+  { id: "todo", label: "To Do", color: STATUS_META.todo.solid },
+  { id: "doing", label: "Doing", color: STATUS_META.in_progress.solid },
+  { id: "done", label: "Done", color: STATUS_META.done.solid },
 ];
 
 const LANE_BY_CATEGORY: Record<StatusKey, KanbanLane> = {
-  Backlog: "backlog",
-  "A fazer": "todo",
-  "Em progresso": "doing",
-  "Em revisão": "doing",
-  "Em teste": "doing",
-  Bloqueado: "doing",
-  Concluído: "done",
-  Outro: "todo",
+  backlog: "backlog",
+  todo: "todo",
+  in_progress: "doing",
+  in_review: "doing",
+  testing: "doing",
+  blocked: "doing",
+  done: "done",
+  other: "todo",
 };
 
 export function kanbanLane(rawStatus: string): KanbanLane {

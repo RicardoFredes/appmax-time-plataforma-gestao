@@ -21,18 +21,19 @@ import { stdin as input, stdout as output } from "node:process";
 // tsconfig não importa de `src`; mesma convenção do `sync/types.ts` para tasks).
 type ProjetoStatus =
   | "discovery"
-  | "refinamento"
-  | "em_andamento"
-  | "em_testes"
-  | "bloqueado"
-  | "pausado"
-  | "concluido";
+  | "refinement"
+  | "in_progress"
+  | "testing"
+  | "blocked"
+  | "paused"
+  | "done";
 
 interface RegistroSemanal {
   semana: string;
   progresso: number;
   saude: number;
   nota: string;
+  marco?: "inicio" | "fim";
 }
 
 interface Projeto {
@@ -61,7 +62,8 @@ function serializeProjetosData(data: ProjetosData, doc?: string): string {
   let out = JSON.stringify(withDoc, null, 2);
   out = out.replace(/\{\n\s*"semana":[\s\S]*?\n\s*\}/g, (block) => {
     const r = JSON.parse(block) as RegistroSemanal;
-    return `{ "semana": ${JSON.stringify(r.semana)}, "progresso": ${r.progresso}, "saude": ${r.saude}, "nota": ${JSON.stringify(r.nota)} }`;
+    const marco = r.marco ? `, "marco": ${JSON.stringify(r.marco)}` : "";
+    return `{ "semana": ${JSON.stringify(r.semana)}, "progresso": ${r.progresso}, "saude": ${r.saude}, "nota": ${JSON.stringify(r.nota)}${marco} }`;
   });
   return out + "\n";
 }
@@ -71,12 +73,12 @@ const JSON_PATH = resolve(__dirname, "../src/features/projetos/projetos.json");
 
 const STATUSES: ProjetoStatus[] = [
   "discovery",
-  "refinamento",
-  "em_andamento",
-  "em_testes",
-  "bloqueado",
-  "pausado",
-  "concluido",
+  "refinement",
+  "in_progress",
+  "testing",
+  "blocked",
+  "paused",
+  "done",
 ];
 
 const SAUDE_LABEL: Record<number, string> = {
@@ -255,7 +257,7 @@ async function registrarSemana(p: Projeto, semana: string): Promise<void> {
 async function varreduraSemanal(data: ProjetosData): Promise<boolean> {
   const semana = mondayISO();
   const q = quarterDe();
-  const abertos = data.projetos.filter((p) => p.quarter === q && p.status !== "concluido");
+  const abertos = data.projetos.filter((p) => p.quarter === q && p.status !== "done");
   if (abertos.length === 0) {
     console.log(`\nNenhum projeto aberto no quarter ${q}.`);
     return false;
@@ -311,7 +313,7 @@ async function editarDados(data: ProjetosData): Promise<boolean> {
   p.inicio = await askDate("Início", p.inicio);
   p.prazo = await askDate("Prazo", p.prazo);
   p.fechamento = await askDate("Fechamento", p.fechamento);
-  if (p.status === "concluido" && !p.fechamento) {
+  if (p.status === "done" && !p.fechamento) {
     if (await askYesNo(`Marcar fechamento como hoje (${toISO(new Date())})?`)) {
       p.fechamento = toISO(new Date());
     }
@@ -334,7 +336,7 @@ async function novoProjeto(data: ProjetosData): Promise<boolean> {
   const nextNum = data.projetos.length + 1;
   const codigo = await askText("Código (ex.: PRJ-1)", `PRJ-${nextNum}`);
   const descricao = await askText("Descrição", "");
-  const status = STATUSES[await askChoice("Status:", STATUSES, STATUSES.indexOf("em_andamento"))];
+  const status = STATUSES[await askChoice("Status:", STATUSES, STATUSES.indexOf("in_progress"))];
   const prioridade = await askInt(
     `Prioridade (1 ${PRIORIDADE_LABEL[1]} … 5 ${PRIORIDADE_LABEL[5]})`,
     1,

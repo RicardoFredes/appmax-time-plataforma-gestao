@@ -4,6 +4,8 @@ import { saudeMeta } from "./derive";
 import type { RegistroSemanal } from "./types";
 
 const ACCENT = "#9b6afa"; // roxo Appmax
+const MARCO_COLOR = { inicio: "#9b6afa", fim: "#10b981" } as const; // roxo / emerald
+const MARCO_LABEL = { inicio: "Início", fim: "Fim" } as const;
 
 const W = 460;
 const H = 210;
@@ -68,23 +70,43 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
         <path d={linePath} fill="none" stroke={ACCENT} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
       )}
 
-      {/* Pontos coloridos pela saúde da semana */}
-      {pts.map((p, i) => (
-        <circle
-          key={p.r.semana}
-          cx={p.x}
-          cy={p.y}
-          r={i === n - 1 ? 5.5 : 4.5}
-          fill={saudeMeta(p.r.saude).color}
-          className="stroke-background"
-          strokeWidth={2}
-        >
-          <title>
-            {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}% ·
-            saúde {saudeMeta(p.r.saude).nivel}/5
-          </title>
-        </circle>
-      ))}
+      {/* Pontos: bandeira nos marcos (início/fim, sem saúde), círculo colorido nos demais */}
+      {pts.map((p, i) => {
+        if (p.r.marco) {
+          const color = MARCO_COLOR[p.r.marco];
+          // Mastro para cima; para baixo quando o ponto está colado no topo.
+          const up = p.y - 16 >= PAD.top;
+          const tip = up ? p.y - 13 : p.y + 13;
+          const midOuter = up ? p.y - 10.5 : p.y + 10.5;
+          const midInner = up ? p.y - 8 : p.y + 8;
+          return (
+            <g key={p.r.semana}>
+              <title>
+                {MARCO_LABEL[p.r.marco]} · {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })}
+              </title>
+              <line x1={p.x} y1={p.y} x2={p.x} y2={tip} stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+              <path d={`M${p.x},${tip} L${p.x + 7},${midOuter} L${p.x},${midInner} Z`} fill={color} />
+              <circle cx={p.x} cy={p.y} r={3} fill={color} className="stroke-background" strokeWidth={2} />
+            </g>
+          );
+        }
+        return (
+          <circle
+            key={p.r.semana}
+            cx={p.x}
+            cy={p.y}
+            r={i === n - 1 ? 5.5 : 4.5}
+            fill={saudeMeta(p.r.saude).color}
+            className="stroke-background"
+            strokeWidth={2}
+          >
+            <title>
+              {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}% ·
+              saúde {saudeMeta(p.r.saude).nivel}/5
+            </title>
+          </circle>
+        );
+      })}
 
       {/* Rótulos do eixo X */}
       {registros.map((r, i) =>

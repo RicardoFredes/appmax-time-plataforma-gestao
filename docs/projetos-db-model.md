@@ -43,8 +43,8 @@ CREATE TABLE projetos (
   nome        TEXT NOT NULL,
   descricao   TEXT NOT NULL DEFAULT '',
   status      TEXT NOT NULL
-              CHECK (status IN ('discovery','refinamento','em_andamento',
-                                'em_testes','bloqueado','pausado','concluido')),
+              CHECK (status IN ('discovery','refinement','in_progress',
+                                'testing','blocked','paused','done')),
   prioridade  SMALLINT NOT NULL CHECK (prioridade BETWEEN 1 AND 5), -- peso nas métricas
   quarter     TEXT NOT NULL,        -- "2026-Q3"
   engenheiro_email TEXT REFERENCES engenheiros(email), -- NULL = sem dono

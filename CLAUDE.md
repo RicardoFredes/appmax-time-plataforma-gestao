@@ -80,7 +80,10 @@ interativo que registra o progresso semanal em `projetos.json`) · `pnpm run dep
 - **Projetos**: `src/features/projetos/projetos.json` é a fonte, editada à mão e **importada
   em build-time** (não passa pelo `sync`/Jira/KV). Atualização semanal = adicionar um objeto
   `{ semana, progresso (0–100 acumulado), saude (1 em perigo … 5 on tracking), nota }` em
-  `registros` do projeto e fazer o deploy. Duas formas de editar sem mexer no JSON à mão
+  `registros` do projeto e fazer o deploy. Um registro pode ter `marco` (`"inicio"` | `"fim"`):
+  demarca o início/fim do projeto — **sem saúde/on-tracking** (a `saude` é ignorada por
+  `saudeAtual`/`tendencia` e nos deltas) e com **ícone de bandeira** no histórico e no gráfico.
+  Os registros de início (progresso 0 na data `inicio`) já existem para os projetos com `inicio`. Duas formas de editar sem mexer no JSON à mão
   (mão continua válido): **(a) editor no frontend** — rota `#/projetos/editor` (botão
   "Reportar / editar" na página), `ProjetosEditor.tsx`: mantém um **rascunho em localStorage**
   (`projetos:editor:draft:v1`, seed do JSON bundlado), preenche progresso/saúde/nota da semana

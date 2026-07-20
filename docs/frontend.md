@@ -98,9 +98,11 @@ status; iniciais de avatar via `src/lib/people.ts`.
 
 ## Status — `src/features/tasks/status.ts`
 
-Normaliza o status cru do Jira em categorias pt-BR (Backlog, A fazer, Em progresso,
-Em revisão, Em teste, Bloqueado, Concluído, Outro) por heurística de regex, com cores
-para ticker/badges. `STATUS_ORDER` define a ordem lógica.
+Normaliza o status cru do Jira em categorias internas com **chaves em inglês**
+(`backlog`, `todo`, `in_progress`, `in_review`, `testing`, `blocked`, `done`, `other`
+— padronizadas com Projetos) por heurística de regex, com cores para ticker/badges. O
+texto por tarefa exibido é o status **cru do Jira**; as categorias servem à cor/ordenação/
+lanes. `STATUS_ORDER` define a ordem lógica.
 
 ## Urgência — `src/features/tasks/urgency.ts`
 

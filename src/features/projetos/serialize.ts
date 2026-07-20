@@ -15,7 +15,8 @@ export function serializeProjetosData(data: ProjetosData, doc?: string): string 
   // Colapsa cada registro semanal em uma linha só, como no arquivo original.
   out = out.replace(/\{\n\s*"semana":[\s\S]*?\n\s*\}/g, (block) => {
     const r = JSON.parse(block) as RegistroSemanal;
-    return `{ "semana": ${JSON.stringify(r.semana)}, "progresso": ${r.progresso}, "saude": ${r.saude}, "nota": ${JSON.stringify(r.nota)} }`;
+    const marco = r.marco ? `, "marco": ${JSON.stringify(r.marco)}` : "";
+    return `{ "semana": ${JSON.stringify(r.semana)}, "progresso": ${r.progresso}, "saude": ${r.saude}, "nota": ${JSON.stringify(r.nota)}${marco} }`;
   });
   return out + "\n";
 }
