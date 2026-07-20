@@ -113,7 +113,6 @@ export function ProjetoDetalhe({
           <span className="inline-flex items-center gap-1.5">
             <UserRound className="h-3.5 w-3.5" />
             {projeto.engenheiroNome ?? "Sem engenheiro"}
-            {projeto.senioridade && <span className="text-xs">· {projeto.senioridade}</span>}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />

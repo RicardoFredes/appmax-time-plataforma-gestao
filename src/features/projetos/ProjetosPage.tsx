@@ -122,53 +122,72 @@ function Avatar({ nome }: { nome: string | null }) {
   );
 }
 
-/** Uma linha da lista de projetos (clicável → abre o detalhe). */
+/**
+ * Uma linha de projeto (clicável → abre o detalhe). Usada nas duas visões:
+ * lista "Por projeto"/"Por engenheiro" e Relatório da semana. As diferenças
+ * são controladas por flags:
+ * - `showEngenheiro`: sub-linha com o responsável (oculta na visão por engenheiro).
+ * - `showImportancia`: badge de importância (oculto no relatório, onde o grupo já indica).
+ * - `showNota`: nota do registro mais recente abaixo (usada no relatório).
+ */
 function ProjetoRow({
   projeto,
   onOpen,
   showEngenheiro = true,
+  showImportancia = true,
+  showNota = false,
 }: {
   projeto: Projeto;
   onOpen: (id: string) => void;
   showEngenheiro?: boolean;
+  showImportancia?: boolean;
+  showNota?: boolean;
 }) {
   const meta = STATUS_META[projeto.status];
   const atual = progressoAtual(projeto);
+  const u = ultimoRegistro(projeto);
   return (
     <button
       type="button"
       onClick={() => onOpen(projeto.id)}
-      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+      className="block w-full px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
     >
-      <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
-        {projeto.codigo}
-      </Badge>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium">{projeto.nome}</span>
-          <StatusBadge status={projeto.status} />
-        </div>
-        {showEngenheiro && (
-          <div className="truncate text-xs text-muted-foreground">
-            {projeto.engenheiroNome ?? "Sem engenheiro"}
-            {projeto.senioridade && ` · ${projeto.senioridade}`}
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
+          {projeto.codigo}
+        </Badge>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-medium">{projeto.nome}</span>
+            <StatusBadge status={projeto.status} />
           </div>
-        )}
-      </div>
-      <Importancia nivel={projeto.prioridade} />
-      <SaudeDot saude={saudeAtual(projeto)} />
-      <div className="hidden w-28 items-center gap-2 sm:flex">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${atual}%`, backgroundColor: meta.color }}
-          />
+          {showEngenheiro && (
+            <div className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+              <UserRound className="h-3.5 w-3.5 shrink-0" />
+              {projeto.engenheiroNome ?? "Sem engenheiro"}
+            </div>
+          )}
         </div>
+        {showImportancia && <Importancia nivel={projeto.prioridade} />}
+        <SaudeDot saude={saudeAtual(projeto)} />
+        <div className="hidden w-28 items-center gap-2 sm:flex">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${atual}%`, backgroundColor: meta.color }}
+            />
+          </div>
+        </div>
+        <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">
+          {atual}%
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </div>
-      <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">
-        {atual}%
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      {showNota && (
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {u?.nota?.trim() || projeto.descricao || "Sem nota registrada."}
+        </p>
+      )}
     </button>
   );
 }
@@ -355,57 +374,16 @@ function DistBar({ onTrack, atencao, emRisco }: { onTrack: number; atencao: numb
   );
 }
 
-/** Uma linha do relatório: dados-chave do projeto + a nota mais recente. */
-function ReportRow({ projeto }: { projeto: Projeto }) {
-  const meta = STATUS_META[projeto.status];
-  const atual = progressoAtual(projeto);
-  const u = ultimoRegistro(projeto);
-  return (
-    <div className="p-4">
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
-          {projeto.codigo}
-        </Badge>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{projeto.nome}</span>
-            <StatusBadge status={projeto.status} />
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <UserRound className="h-3.5 w-3.5" />
-            {projeto.engenheiroNome ?? "Sem engenheiro"}
-            {projeto.senioridade && <span>· {projeto.senioridade}</span>}
-          </div>
-        </div>
-        <Importancia nivel={projeto.prioridade} />
-        <SaudeDot saude={saudeAtual(projeto)} />
-        <div className="hidden w-28 items-center sm:flex">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${atual}%`, backgroundColor: meta.color }}
-            />
-          </div>
-        </div>
-        <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">
-          {atual}%
-        </span>
-      </div>
-      <p className="mt-1.5 text-sm text-muted-foreground">
-        {u?.nota?.trim() || projeto.descricao || "Sem nota registrada."}
-      </p>
-    </div>
-  );
-}
-
 function RelatorioSemana({
   projetos,
   semana,
   sustentacao,
+  onOpen,
 }: {
   projetos: Projeto[];
   semana: string | null;
   sustentacao: SustentacaoData | undefined;
+  onOpen: (id: string) => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [copied, setCopied] = useState(false);
@@ -445,9 +423,6 @@ function RelatorioSemana({
 
       {/* Panorama gráfico, ponderado pela importância */}
       <Card className="p-5">
-        <div className="mb-4 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          Panorama · ponderado pela importância
-        </div>
         <div className="grid gap-6 sm:grid-cols-3">
           <div>
             <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -489,31 +464,32 @@ function RelatorioSemana({
 
       {/* Sustentação da semana (acima dos projetos) */}
       {duty.length > 0 && (
-        <Card className="p-4">
-          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Sustentação esta semana
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
+            <h2 className="text-sm font-semibold tracking-tight">Sustentação esta semana</h2>
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <Card className="divide-y">
             {duty.map((d) => (
-              <div key={d.escopo} className="text-sm">
-                <span className="font-medium">{d.nome}</span>
-                <span className="text-muted-foreground"> · {d.escopo}</span>
-                {d.cobrindo && (
-                  <Badge variant="warning" className="ml-2 gap-1">
-                    <Palmtree className="h-3 w-3" />
-                    cobre {firstName(d.cobrindo)}
-                  </Badge>
-                )}
-                {d.uncovered && (
-                  <Badge variant="destructive" className="ml-2">
-                    sem cobertura
-                  </Badge>
-                )}
+              <div key={d.escopo} className="px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{d.escopo}</span>
+                  {d.cobrindo && (
+                    <Badge variant="warning" className="gap-1">
+                      <Palmtree className="h-3 w-3" />
+                      cobre {firstName(d.cobrindo)}
+                    </Badge>
+                  )}
+                  {d.uncovered && <Badge variant="destructive">sem cobertura</Badge>}
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <UserRound className="h-3.5 w-3.5" />
+                  {d.nome}
+                </div>
               </div>
             ))}
-          </div>
-        </Card>
+          </Card>
+        </div>
       )}
 
       {/* Projetos agrupados por prioridade */}
@@ -521,16 +497,21 @@ function RelatorioSemana({
         {grupos.map((g) => (
           <div key={g.nivel}>
             <div className="mb-2 flex items-center gap-2">
-              <Star className="h-3.5 w-3.5 fill-current text-amber-500" />
+              <Importancia nivel={g.nivel} />
               <h2 className="text-sm font-semibold tracking-tight">{g.label}</h2>
-              <span className="text-xs text-muted-foreground">· importância {g.nivel}/5</span>
               <Badge variant="outline" className="ml-1">
                 {g.projetos.length}
               </Badge>
             </div>
             <Card className="divide-y">
               {g.projetos.map((p) => (
-                <ReportRow key={p.id} projeto={p} />
+                <ProjetoRow
+                  key={p.id}
+                  projeto={p}
+                  onOpen={onOpen}
+                  showImportancia={false}
+                  showNota
+                />
               ))}
             </Card>
           </div>
@@ -680,6 +661,7 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
               projetos={projetos}
               semana={stats.semana}
               sustentacao={sustentacao}
+              onOpen={(pid) => navigate(pid)}
             />
           </TabsContent>
         </Tabs>

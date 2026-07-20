@@ -31,8 +31,6 @@ export interface Projeto {
   engenheiroEmail: string | null;
   /** Nome de exibição do engenheiro, ou `null` se sem dono. */
   engenheiroNome: string | null;
-  /** Rótulo de senioridade (texto livre), ou `null`. */
-  senioridade: string | null;
   /** Prazo `YYYY-MM-DD`, ou `null` se sem data definida. */
   prazo: string | null;
   status: ProjetoStatus;
