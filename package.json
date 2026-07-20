@@ -12,6 +12,7 @@
     "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
     "sync": "tsx sync/sync.ts",
     "sync:export": "tsx sync/sync.ts --export-only",
+    "projetos": "tsx sync/projetos.ts",
     "dev:cf": "pnpm run build && wrangler pages dev",
     "deploy": "pnpm run build && wrangler pages deploy",
     "deploy:create": "wrangler pages project create appmax-time-plataforma-tarefas --production-branch main"

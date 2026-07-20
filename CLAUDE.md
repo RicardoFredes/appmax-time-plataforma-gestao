@@ -16,7 +16,8 @@ React 18 + Vite 5 + TS · Tailwind **v4** (`@tailwindcss/vite`, tema em
 ## Comandos
 `pnpm dev` · `pnpm build` · `pnpm typecheck` · `pnpm sync` (Jira→JSON, precisa `.env`) ·
 `pnpm sync:export` (sem rede: reaplica o overlay de urgência **e** reconstrói a escala
-de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy`.
+de sustentação a partir de `config.json`/`vacations.json`) · `pnpm projetos` (CLI
+interativo que registra o progresso semanal em `projetos.json`) · `pnpm run deploy`.
 
 ## Mapa
 - `sync/` — pipeline de dados. `config.json` (time + épicos + bloco `sustentacao`),
@@ -40,6 +41,8 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   em altura total à direita), `EvolucaoChart` (SVG, linha do progresso; pontos coloridos
   pela saúde), `Velocimetro` (SVG, medidor semicircular do on-tracking 1–5). Há um projeto
   fake `EX1` (id `exemplo-demonstracao`) só para demonstrar a tela preenchida — remova quando quiser.
+  `ProjetosEditor` (editor visual `#/projetos/editor`, rascunho em localStorage, gera o JSON para colar)
+  e `serialize.ts` (formata `ProjetosData` no estilo do arquivo, usado pelo editor).
 - `src/components/ui/` — shadcn copiado do backoffice. `src/App.tsx` — nav por hash
   (`#/projetos`, `#/sustentacao`, `#/ferias`) entre as abas Tarefas/Projetos/Sustentação/Férias;
   header da aba Tarefas.
@@ -70,7 +73,16 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
 - **Projetos**: `src/features/projetos/projetos.json` é a fonte, editada à mão e **importada
   em build-time** (não passa pelo `sync`/Jira/KV). Atualização semanal = adicionar um objeto
   `{ semana, progresso (0–100 acumulado), saude (1 em perigo … 5 on tracking), nota }` em
-  `registros` do projeto e fazer o deploy. Progresso/saúde/nota "atuais" = os do último
+  `registros` do projeto e fazer o deploy. Duas formas de editar sem mexer no JSON à mão
+  (mão continua válido): **(a) editor no frontend** — rota `#/projetos/editor` (botão
+  "Reportar / editar" na página), `ProjetosEditor.tsx`: mantém um **rascunho em localStorage**
+  (`projetos:editor:draft:v1`, seed do JSON bundlado), preenche progresso/saúde/nota da semana
+  por projeto, edita metadados, adiciona/remove projetos, e ao final **Copiar JSON**/baixar
+  para colar em `projetos.json` + deploy; **(b) CLI** `pnpm projetos` (`sync/projetos.ts`,
+  `readline` nativo, sem deps) para editar direto no arquivo. Ambos usam a `semana` da
+  segunda-feira corrente (edita no lugar se já existir) e preservam o `$doc` e o estilo do
+  arquivo (registros em linha única) — via `serialize.ts` no front e uma cópia da mesma
+  lógica no CLI (o projeto `sync` do tsconfig não importa de `src`). Progresso/saúde/nota "atuais" = os do último
   registro (por `semana`). Cada projeto tem `id` (slug da URL de detalhe `#/projetos/<id>`),
   `codigo` (ID estilo Jira, ex.: "PRJ-3"), `prioridade` (1–5, peso das métricas) e `quarter`
   (ex.: "2026-Q3"). Fica em `src/` (não em `sync/`) por causa do `composite`+`include:["src"]`

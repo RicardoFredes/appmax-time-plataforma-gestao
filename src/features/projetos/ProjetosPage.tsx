@@ -10,6 +10,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  Database,
   Folder,
   FolderKanban,
   Palmtree,
@@ -32,6 +33,7 @@ import { GROUP_ACCENT } from "@/features/sustentacao/SustentacaoPage";
 import type { SustentacaoData } from "@/features/tasks/types";
 import projetosData from "./projetos.json";
 import { ProjetoDetalhe } from "./ProjetoDetalhe";
+import { ProjetosEditor } from "./ProjetosEditor";
 import { Prioridade } from "./Prioridade";
 import { Velocimetro } from "./Velocimetro";
 import type { Projeto, ProjetosData } from "./types";
@@ -718,6 +720,11 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
     };
   }, [projetos]);
 
+  // Editor visual (rascunho em localStorage) — rota `#/projetos/editor`.
+  if (id === "editor") {
+    return <ProjetosEditor onBack={() => navigate(null)} />;
+  }
+
   // Detalhe de um projeto (busca em todos os quarters, não só no selecionado).
   // A rota usa o código (ex.: PRJ-3); aceita o slug antigo como fallback.
   if (id) {
@@ -753,19 +760,31 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
       <div>
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-tight">Controle de Projetos</h1>
-          <Select value={quarter} onValueChange={setQuarter}>
-            <SelectTrigger className="h-9 w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {quarters.map((q) => (
-                <SelectItem key={q} value={q}>
-                  {quarterLabel(q)}
-                  {q === quarterAtual ? " · atual" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={quarter} onValueChange={setQuarter}>
+              <SelectTrigger className="h-9 w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {quarters.map((q) => (
+                  <SelectItem key={q} value={q}>
+                    {quarterLabel(q)}
+                    {q === quarterAtual ? " · atual" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => navigate("editor")}
+              title="Editor de projetos (reportar / editar) — recurso de dev"
+              aria-label="Abrir editor de projetos"
+            >
+              <Database className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Evolução semanal dos projetos · de <code>projetos.json</code>.
@@ -785,10 +804,20 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
         />
       )}
 
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <FolderKanban className="h-3.5 w-3.5" />
-        Clique em um projeto para ver o histórico. Para atualizar, adicione um registro
-        semanal em <code>src/features/projetos/projetos.json</code> e faça o deploy.
+      <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <p className="leading-relaxed">
+          Clique em um projeto para ver o histórico. Para atualizar, use o{" "}
+          <button
+            type="button"
+            onClick={() => navigate("editor")}
+            className="text-primary underline underline-offset-2"
+          >
+            editor
+          </button>{" "}
+          (ou o CLI <code>pnpm projetos</code>), copie o JSON e cole em{" "}
+          <code>src/features/projetos/projetos.json</code>, depois faça o deploy.
+        </p>
       </div>
     </div>
   );

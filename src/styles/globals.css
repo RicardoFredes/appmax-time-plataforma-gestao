@@ -108,4 +108,16 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
   }
+  /* Tailwind v4 não aplica mais `cursor: pointer` em botões por padrão.
+     Restaura em tudo que é clicável (botões, role=button, links, selects),
+     exceto quando desabilitado. Cobre também as linhas de projeto (que são
+     <button>) e os controles do shadcn. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  label[for],
+  summary,
+  select:not(:disabled) {
+    cursor: pointer;
+  }
 }
