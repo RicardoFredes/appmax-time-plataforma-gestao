@@ -5,7 +5,14 @@ import { SAUDE_META, saudeMeta } from "./derive";
  * 1 (em perigo, vermelho, à esquerda) a 5 (on tracking, verde, à direita); o
  * ponteiro aponta a saúde atual.
  */
-export function Velocimetro({ saude }: { saude: number }) {
+export function Velocimetro({
+  saude,
+  showValor = true,
+}: {
+  saude: number;
+  /** Exibe o número (n/5) e o rótulo ao lado do medidor. */
+  showValor?: boolean;
+}) {
   const { nivel, label, color } = saudeMeta(saude);
 
   const cx = 70;
@@ -28,38 +35,43 @@ export function Velocimetro({ saude }: { saude: number }) {
   const needleDeg = (180 * (5 - clamped)) / 4;
   const [nx, ny] = pt(needleDeg, r - 6);
 
+  const medidor = (
+    <svg viewBox="0 0 140 82" className="h-auto w-[130px] shrink-0" aria-hidden>
+      {/* Faixas de 1 a 5 (esquerda → direita = vermelho → verde) */}
+      {[1, 2, 3, 4, 5].map((n) => {
+        const t1 = 180 - 36 * (n - 1);
+        const t2 = 180 - 36 * n;
+        return (
+          <path
+            key={n}
+            d={arc(t1 - 0.6, t2 + 0.6, r)}
+            fill="none"
+            stroke={SAUDE_META[n].color}
+            strokeWidth={sw}
+            strokeLinecap="butt"
+            opacity={n === nivel ? 1 : 0.35}
+          />
+        );
+      })}
+      {/* Ponteiro */}
+      <line
+        x1={cx}
+        y1={cy}
+        x2={nx}
+        y2={ny}
+        className="stroke-foreground"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <circle cx={cx} cy={cy} r={5} className="fill-foreground" />
+    </svg>
+  );
+
+  if (!showValor) return <div className="flex justify-center">{medidor}</div>;
+
   return (
     <div className="flex items-center gap-3">
-      <svg viewBox="0 0 140 82" className="h-auto w-[130px] shrink-0" aria-hidden>
-        {/* Faixas de 1 a 5 (esquerda → direita = vermelho → verde) */}
-        {[1, 2, 3, 4, 5].map((n) => {
-          const t1 = 180 - 36 * (n - 1);
-          const t2 = 180 - 36 * n;
-          return (
-            <path
-              key={n}
-              d={arc(t1 - 0.6, t2 + 0.6, r)}
-              fill="none"
-              stroke={SAUDE_META[n].color}
-              strokeWidth={sw}
-              strokeLinecap="butt"
-              opacity={n === nivel ? 1 : 0.35}
-            />
-          );
-        })}
-        {/* Ponteiro */}
-        <line
-          x1={cx}
-          y1={cy}
-          x2={nx}
-          y2={ny}
-          className="stroke-foreground"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-        />
-        <circle cx={cx} cy={cy} r={5} className="fill-foreground" />
-      </svg>
-
+      {medidor}
       <div className="shrink-0">
         <div className="text-3xl font-bold leading-none tabular-nums" style={{ color }}>
           {nivel}

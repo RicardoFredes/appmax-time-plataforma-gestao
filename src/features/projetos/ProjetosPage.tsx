@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   differenceInCalendarDays,
   format,
@@ -13,13 +13,11 @@ import {
   FolderKanban,
   Palmtree,
   ShieldCheck,
-  Star,
   UserRound,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -32,16 +30,17 @@ import { scheduleForAll } from "@/features/sustentacao/schedule";
 import type { SustentacaoData } from "@/features/tasks/types";
 import projetosData from "./projetos.json";
 import { ProjetoDetalhe } from "./ProjetoDetalhe";
+import { Prioridade } from "./Prioridade";
 import { Velocimetro } from "./Velocimetro";
 import type { Projeto, ProjetosData } from "./types";
 import {
   PRIORIDADE_LABEL,
   STATUS_META,
+  STATUS_ORDER,
   ordenarProjetos,
   porEngenheiro,
   prioridadeMeta,
   progressoAtual,
-  progressoMedio,
   progressoMedioPonderado,
   quarterDe,
   quarterLabel,
@@ -98,19 +97,6 @@ function SaudeDot({ saude }: { saude: number }) {
   );
 }
 
-function Importancia({ nivel }: { nivel: number }) {
-  const m = prioridadeMeta(nivel);
-  return (
-    <span
-      className="inline-flex h-6 items-center gap-1 rounded-full bg-amber-500/10 px-2 text-[11px] font-medium text-amber-600 dark:text-amber-400"
-      title={`Importância: ${m.label} (${m.nivel}/5)`}
-    >
-      <Star className="h-3 w-3 fill-current" />
-      {m.nivel}
-    </span>
-  );
-}
-
 function Avatar({ nome }: { nome: string | null }) {
   return (
     <div
@@ -123,12 +109,11 @@ function Avatar({ nome }: { nome: string | null }) {
 }
 
 /**
- * Uma linha de projeto (clicável → abre o detalhe). Usada nas duas visões:
- * lista "Por projeto"/"Por engenheiro" e Relatório da semana. As diferenças
- * são controladas por flags:
- * - `showEngenheiro`: sub-linha com o responsável (oculta na visão por engenheiro).
- * - `showImportancia`: badge de importância (oculto no relatório, onde o grupo já indica).
- * - `showNota`: nota do registro mais recente abaixo (usada no relatório).
+ * Uma linha de projeto (clicável → abre o detalhe). As diferenças por
+ * agrupamento são controladas por flags:
+ * - `showEngenheiro`: sub-linha com o responsável (oculta ao agrupar por engenheiro).
+ * - `showImportancia`: badge de importância (oculto ao agrupar por prioridade).
+ * - `showNota`: nota do registro mais recente abaixo.
  */
 function ProjetoRow({
   projeto,
@@ -168,7 +153,7 @@ function ProjetoRow({
             </div>
           )}
         </div>
-        {showImportancia && <Importancia nivel={projeto.prioridade} />}
+        {showImportancia && <Prioridade nivel={projeto.prioridade} />}
         <SaudeDot saude={saudeAtual(projeto)} />
         <div className="hidden w-28 items-center gap-2 sm:flex">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
@@ -192,46 +177,7 @@ function ProjetoRow({
   );
 }
 
-/* ---------------------------------------------------------------- visão por eng. */
-
-function PorEngenheiro({
-  projetos,
-  onOpen,
-}: {
-  projetos: Projeto[];
-  onOpen: (id: string) => void;
-}) {
-  const grupos = useMemo(() => porEngenheiro(projetos), [projetos]);
-  return (
-    <div className="space-y-6">
-      {grupos.map((g) => (
-        <div key={g.key}>
-          <div className="mb-2 flex items-center gap-3">
-            <Avatar nome={g.email ? g.nome : null} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="font-semibold tracking-tight">{g.nome}</h2>
-                <Badge variant="outline">
-                  {g.projetos.length} {g.projetos.length === 1 ? "projeto" : "projetos"}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                progresso médio {g.progressoMedio}%
-              </p>
-            </div>
-          </div>
-          <Card className="divide-y">
-            {ordenarProjetos(g.projetos).map((p) => (
-              <ProjetoRow key={p.id} projeto={p} onOpen={onOpen} showEngenheiro={false} />
-            ))}
-          </Card>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------- relatório da semana */
+/* ------------------------------------------------------- métricas e agrupamento */
 
 interface Metricas {
   progPond: number;
@@ -240,7 +186,6 @@ interface Metricas {
   atencao: number;
   onTrack: number;
   vencidos: number;
-  altaImp: number;
 }
 
 function computeMetricas(projetos: Projeto[], today: Date): Metricas {
@@ -255,7 +200,6 @@ function computeMetricas(projetos: Projeto[], today: Date): Metricas {
     atencao: projetos.filter((p) => saudeAtual(p) === 3).length,
     onTrack: projetos.filter((p) => saudeAtual(p) >= 4).length,
     vencidos: projetos.filter(venc).length,
-    altaImp: projetos.filter((p) => p.prioridade >= 4).length,
   };
 }
 
@@ -270,17 +214,28 @@ function dutyResumo(sustentacao: SustentacaoData | undefined) {
   }));
 }
 
-interface GrupoPrioridade {
-  nivel: number;
-  label: string;
+/** Comparador dentro de um grupo: prioridade desc, pior saúde primeiro, nome. */
+function comparadorProjeto(a: Projeto, b: Projeto): number {
+  if (b.prioridade !== a.prioridade) return b.prioridade - a.prioridade;
+  const s = saudeAtual(a) - saudeAtual(b);
+  if (s !== 0) return s;
+  return a.nome.localeCompare(b.nome, "pt-BR");
+}
+
+/** Dimensão de organização do relatório. */
+type Dimensao = "prioridade" | "engenheiro" | "status";
+
+/** Uma seção do relatório: um cabeçalho e os projetos daquele grupo. */
+interface Secao {
+  key: string;
+  header: ReactNode;
+  /** Rótulo textual da seção (para o relatório copiável). */
+  texto: string;
   projetos: Projeto[];
 }
 
-/**
- * Agrupa os projetos por nível de prioridade (5 → 1). Dentro de cada grupo,
- * pior saúde primeiro, depois nome.
- */
-function agruparPorPrioridade(projetos: Projeto[]): GrupoPrioridade[] {
+/** Agrupa por nível de prioridade (5 → 1). */
+function agruparPorPrioridade(projetos: Projeto[]): { nivel: number; projetos: Projeto[] }[] {
   const map = new Map<number, Projeto[]>();
   for (const p of projetos) {
     const n = prioridadeMeta(p.prioridade).nivel;
@@ -290,18 +245,101 @@ function agruparPorPrioridade(projetos: Projeto[]): GrupoPrioridade[] {
   }
   return [...map.entries()]
     .sort((a, b) => b[0] - a[0])
-    .map(([nivel, ps]) => ({
-      nivel,
-      label: PRIORIDADE_LABEL[nivel],
-      projetos: ps.sort((a, b) => {
-        const s = saudeAtual(a) - saudeAtual(b);
-        return s !== 0 ? s : a.nome.localeCompare(b.nome, "pt-BR");
-      }),
-    }));
+    .map(([nivel, ps]) => ({ nivel, projetos: ps.slice().sort(comparadorProjeto) }));
+}
+
+/** Agrupa por status, na ordem lógica de `STATUS_ORDER`. */
+function agruparPorStatus(projetos: Projeto[]): { status: Projeto["status"]; projetos: Projeto[] }[] {
+  const map = new Map<Projeto["status"], Projeto[]>();
+  for (const p of projetos) {
+    const arr = map.get(p.status);
+    if (arr) arr.push(p);
+    else map.set(p.status, [p]);
+  }
+  return STATUS_ORDER.filter((s) => map.has(s)).map((s) => ({
+    status: s,
+    projetos: map.get(s)!.slice().sort(comparadorProjeto),
+  }));
+}
+
+/** Monta as seções + as flags de exibição da linha conforme a dimensão. */
+function montarSecoes(
+  projetos: Projeto[],
+  dim: Dimensao,
+): { secoes: Secao[]; showEngenheiro: boolean; showImportancia: boolean } {
+  if (dim === "engenheiro") {
+    return {
+      showEngenheiro: false,
+      showImportancia: true,
+      secoes: porEngenheiro(projetos).map((g) => ({
+        key: g.key,
+        texto: g.nome,
+        projetos: ordenarProjetos(g.projetos),
+        header: (
+          <div className="mb-2 flex items-center gap-3">
+            <Avatar nome={g.email ? g.nome : null} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold tracking-tight">{g.nome}</h2>
+                <Badge variant="outline">
+                  {g.projetos.length} {g.projetos.length === 1 ? "projeto" : "projetos"}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                progresso médio {g.progressoMedio}%
+              </p>
+            </div>
+          </div>
+        ),
+      })),
+    };
+  }
+  if (dim === "status") {
+    return {
+      showEngenheiro: true,
+      showImportancia: true,
+      secoes: agruparPorStatus(projetos).map(({ status, projetos: ps }) => ({
+        key: status,
+        texto: STATUS_META[status].label,
+        projetos: ps,
+        header: (
+          <div className="mb-2 flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: STATUS_META[status].color }}
+            />
+            <h2 className="text-sm font-semibold tracking-tight">{STATUS_META[status].label}</h2>
+            <Badge variant="outline" className="ml-1">
+              {ps.length}
+            </Badge>
+          </div>
+        ),
+      })),
+    };
+  }
+  // prioridade (padrão)
+  return {
+    showEngenheiro: true,
+    showImportancia: false,
+    secoes: agruparPorPrioridade(projetos).map((g) => ({
+      key: `p${g.nivel}`,
+      texto: PRIORIDADE_LABEL[g.nivel],
+      projetos: g.projetos,
+      header: (
+        <div className="mb-2 flex items-center gap-2">
+          <Prioridade nivel={g.nivel} />
+          <h2 className="text-sm font-semibold tracking-tight">{PRIORIDADE_LABEL[g.nivel]}</h2>
+          <Badge variant="outline" className="ml-1">
+            {g.projetos.length}
+          </Badge>
+        </div>
+      ),
+    })),
+  };
 }
 
 function buildReport(
-  projetos: Projeto[],
+  secoes: Secao[],
   duty: ReturnType<typeof dutyResumo>,
   m: Metricas,
   semana: string | null,
@@ -329,9 +367,9 @@ function buildReport(
     L.push("");
   }
 
-  for (const g of agruparPorPrioridade(projetos)) {
-    L.push(`${g.label} (importância ${g.nivel}/5):`);
-    for (const p of g.projetos) {
+  for (const s of secoes) {
+    L.push(`${s.texto}:`);
+    for (const p of s.projetos) {
       const u = ultimoRegistro(p);
       const nota = u?.nota?.trim() || p.descricao || "—";
       const sm = saudeMeta(saudeAtual(p));
@@ -343,6 +381,37 @@ function buildReport(
     L.push("");
   }
   return L.join("\n").trim();
+}
+
+/** Gráfico de rosca (donut) com a porcentagem no centro. */
+function Donut({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, value));
+  const size = 104;
+  const stroke = 12;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const center = size / 2;
+  return (
+    <div className="relative mx-auto" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <circle cx={center} cy={center} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
+        <circle
+          cx={center}
+          cy={center}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          className="stroke-primary"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - pct / 100)}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold tabular-nums">
+        {pct}%
+      </div>
+    </div>
+  );
 }
 
 /** Barra empilhada da distribuição de on-tracking (on-track / atenção / risco). */
@@ -374,25 +443,37 @@ function DistBar({ onTrack, atencao, emRisco }: { onTrack: number; atencao: numb
   );
 }
 
-function RelatorioSemana({
+const DIMENSAO_LABEL: Record<Dimensao, string> = {
+  prioridade: "Prioridade",
+  engenheiro: "Engenheiro",
+  status: "Status",
+};
+
+/* ---------------------------------------------------------- relatório da semana */
+
+function Relatorio({
   projetos,
-  semana,
+  stats,
   sustentacao,
   onOpen,
 }: {
   projetos: Projeto[];
-  semana: string | null;
+  stats: { total: number; emAndamento: number; concluidos: number; semana: string | null };
   sustentacao: SustentacaoData | undefined;
   onOpen: (id: string) => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [copied, setCopied] = useState(false);
+  const [dim, setDim] = useState<Dimensao>("prioridade");
   const duty = useMemo(() => dutyResumo(sustentacao), [sustentacao]);
   const metricas = useMemo(() => computeMetricas(projetos, today), [projetos, today]);
-  const grupos = useMemo(() => agruparPorPrioridade(projetos), [projetos]);
+  const { secoes, showEngenheiro, showImportancia } = useMemo(
+    () => montarSecoes(projetos, dim),
+    [projetos, dim],
+  );
   const texto = useMemo(
-    () => buildReport(projetos, duty, metricas, semana),
-    [projetos, duty, metricas, semana],
+    () => buildReport(secoes, duty, metricas, stats.semana),
+    [secoes, duty, metricas, stats.semana],
   );
 
   const copy = async () => {
@@ -406,58 +487,77 @@ function RelatorioSemana({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 border-t pt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           Panorama e status por projeto
-          {semana && (
-            <> · semana de {format(parseISO(semana), "dd MMM yyyy", { locale: ptBR })}</>
+          {stats.semana && (
+            <> · semana de {format(parseISO(stats.semana), "dd MMM yyyy", { locale: ptBR })}</>
           )}
           .
         </p>
-        <Button variant="outline" size="sm" onClick={copy}>
-          {copied ? <Check className="text-emerald-500" /> : <Copy />}
-          {copied ? "Copiado" : "Copiar relatório"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Visualizar por
+          </span>
+          <Select value={dim} onValueChange={(v) => setDim(v as Dimensao)}>
+            <SelectTrigger className="h-9 w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(DIMENSAO_LABEL) as Dimensao[]).map((d) => (
+                <SelectItem key={d} value={d}>
+                  {DIMENSAO_LABEL[d]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={copy}>
+            {copied ? <Check className="text-emerald-500" /> : <Copy />}
+            {copied ? "Copiado" : "Copiar relatório"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Métricas gerais */}
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label="Projetos" value={stats.total} />
+        <Stat label="Ativos" value={stats.emAndamento} />
+        <Stat label="Concluídos" value={stats.concluidos} />
       </div>
 
       {/* Panorama gráfico, ponderado pela importância */}
       <Card className="p-5">
         <div className="grid gap-6 sm:grid-cols-3">
-          <div>
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="flex flex-col text-center">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Progresso ponderado
             </div>
-            <div className="mt-1 text-3xl font-bold leading-none tabular-nums">
-              {metricas.progPond}%
-            </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${metricas.progPond}%` }}
-              />
+            <div className="flex flex-1 items-center justify-center">
+              <Donut value={metricas.progPond} />
             </div>
           </div>
-          <div>
+          <div className="flex flex-col text-center">
             <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Saúde ponderada
             </div>
-            <Velocimetro saude={metricas.saudePond} />
+            <div className="flex flex-1 items-center justify-center">
+              <Velocimetro saude={metricas.saudePond} showValor={false} />
+            </div>
           </div>
-          <div>
+          <div className="flex flex-col">
             <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               On-tracking
             </div>
-            <DistBar
-              onTrack={metricas.onTrack}
-              atencao={metricas.atencao}
-              emRisco={metricas.emRisco}
-            />
-            {metricas.vencidos > 0 && (
-              <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                {metricas.vencidos} com prazo vencido
-              </p>
-            )}
+            <div className="flex flex-1 items-center">
+              <div className="w-full">
+                <DistBar
+                  onTrack={metricas.onTrack}
+                  atencao={metricas.atencao}
+                  emRisco={metricas.emRisco}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -492,25 +592,19 @@ function RelatorioSemana({
         </div>
       )}
 
-      {/* Projetos agrupados por prioridade */}
+      {/* Projetos agrupados conforme a dimensão selecionada */}
       <div className="space-y-5">
-        {grupos.map((g) => (
-          <div key={g.nivel}>
-            <div className="mb-2 flex items-center gap-2">
-              <Importancia nivel={g.nivel} />
-              <h2 className="text-sm font-semibold tracking-tight">{g.label}</h2>
-              <Badge variant="outline" className="ml-1">
-                {g.projetos.length}
-              </Badge>
-            </div>
+        {secoes.map((s) => (
+          <div key={s.key}>
+            {s.header}
             <Card className="divide-y">
-              {g.projetos.map((p) => (
+              {s.projetos.map((p) => (
                 <ProjetoRow
                   key={p.id}
                   projeto={p}
                   onOpen={onOpen}
-                  showImportancia={false}
-                  showNota
+                  showEngenheiro={showEngenheiro}
+                  showImportancia={showImportancia}
                 />
               ))}
             </Card>
@@ -563,12 +657,9 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
       total: projetos.length,
       emAndamento,
       concluidos,
-      medio: progressoMedio(projetos),
       semana,
     };
   }, [projetos]);
-
-  const ordenados = useMemo(() => ordenarProjetos(projetos), [projetos]);
 
   // Detalhe de um projeto (busca em todos os quarters, não só no selecionado).
   if (id) {
@@ -599,37 +690,26 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+      <div>
+        <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-tight">Controle de Projetos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Evolução semanal por projeto e por engenheiro · de <code>projetos.json</code>.
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Quarter
-            </span>
-            <Select value={quarter} onValueChange={setQuarter}>
-              <SelectTrigger className="h-9 w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {quarters.map((q) => (
-                  <SelectItem key={q} value={q}>
-                    {quarterLabel(q)}
-                    {q === quarterAtual ? " · atual" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={quarter} onValueChange={setQuarter}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {quarters.map((q) => (
+                <SelectItem key={q} value={q}>
+                  {quarterLabel(q)}
+                  {q === quarterAtual ? " · atual" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          <Stat label="Projetos" value={stats.total} />
-          <Stat label="Ativos" value={stats.emAndamento} />
-          <Stat label="Concluídos" value={stats.concluidos} />
-          <Stat label="Progresso médio" value={`${stats.medio}%`} />
-        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Evolução semanal dos projetos · de <code>projetos.json</code>.
+        </p>
       </div>
 
       {projetos.length === 0 ? (
@@ -637,34 +717,12 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
           Nenhum projeto em {quarterLabel(quarter)}.
         </Card>
       ) : (
-        <Tabs defaultValue="projeto">
-          <TabsList>
-            <TabsTrigger value="projeto">Por projeto</TabsTrigger>
-            <TabsTrigger value="engenheiro">Por engenheiro</TabsTrigger>
-            <TabsTrigger value="relatorio">Relatório da semana</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="projeto">
-            <Card className="divide-y">
-              {ordenados.map((p) => (
-                <ProjetoRow key={p.id} projeto={p} onOpen={(pid) => navigate(pid)} />
-              ))}
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="engenheiro">
-            <PorEngenheiro projetos={projetos} onOpen={(pid) => navigate(pid)} />
-          </TabsContent>
-
-          <TabsContent value="relatorio">
-            <RelatorioSemana
-              projetos={projetos}
-              semana={stats.semana}
-              sustentacao={sustentacao}
-              onOpen={(pid) => navigate(pid)}
-            />
-          </TabsContent>
-        </Tabs>
+        <Relatorio
+          projetos={projetos}
+          stats={stats}
+          sustentacao={sustentacao}
+          onOpen={(pid) => navigate(pid)}
+        />
       )}
 
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

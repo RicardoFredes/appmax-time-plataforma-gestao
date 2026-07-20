@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   CalendarDays,
   Minus,
-  Star,
   TrendingDown,
   TrendingUp,
   UserRound,
@@ -23,7 +22,6 @@ import { EvolucaoChart } from "./EvolucaoChart";
 import { Velocimetro } from "./Velocimetro";
 import {
   STATUS_META,
-  prioridadeMeta,
   progressoAtual,
   quarterLabel,
   registrosOrdenados,
@@ -31,6 +29,7 @@ import {
   saudeMeta,
   tendencia,
 } from "./derive";
+import { Prioridade } from "./Prioridade";
 import type { Projeto } from "./types";
 
 function Delta({ value }: { value: number }) {
@@ -98,13 +97,7 @@ export function ProjetoDetalhe({
           </Badge>
           <h1 className="text-2xl font-bold tracking-tight">{projeto.nome}</h1>
           <Badge variant={meta.badge}>{meta.label}</Badge>
-          <span
-            className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
-            title={`Importância: ${prioridadeMeta(projeto.prioridade).label}`}
-          >
-            <Star className="h-3 w-3 fill-current" />
-            Importância {prioridadeMeta(projeto.prioridade).nivel}/5
-          </span>
+          <Prioridade nivel={projeto.prioridade} showLabel />
           <Badge variant="outline" className="font-mono">
             {quarterLabel(projeto.quarter)}
           </Badge>

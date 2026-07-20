@@ -77,11 +77,13 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
   do tsconfig, que exige o JSON dentro da árvore type-checada. Rota de detalhe é sub-hash lida
   na própria `ProjetosPage`; `App.tsx` casa a página pelo **primeiro segmento** do hash.
   A visão principal filtra pelo **quarter atual** (relógio do cliente, `quarterDe`); quarters
-  passados ficam no seletor (histórico preservado). O **Relatório da semana** (para a direção) é
-  **por projeto, ordenado por prioridade** (não por engenheiro): um panorama gráfico ponderado
-  pela importância (progresso, velocímetro de saúde, barra de distribuição on-tracking) + uma
-  linha por projeto com status/on-tracking/% e a nota mais recente + a sustentação da semana no
-  rodapé (via `scheduleForAll`, dado passado por prop do `App`).
+  passados ficam no seletor (histórico preservado). A página tem **uma única visão** (o
+  relatório, para a direção) — **sem abas**; um select "Visualizar por" (ao lado de "Copiar
+  relatório") troca o **agrupamento**: prioridade, engenheiro ou status (`montarSecoes`).
+  Sempre mostra: panorama gráfico ponderado pela importância (progresso, velocímetro de saúde,
+  barra de distribuição on-tracking), a sustentação da semana (via `scheduleForAll`, dado
+  passado por prop do `App`) e a linha por projeto (`ProjetoRow`) com status/on-tracking/% e a
+  nota mais recente. O texto de "Copiar relatório" acompanha o agrupamento selecionado.
 - Tema **Appmax** (roxo `#9b6afa`) em `src/styles/globals.css`; logo em
   `src/components/logo.tsx` (copiados de `appmax-app-frontend`).
 - Ao passar `"$VAR:sufixo"` no zsh, escape com `"${VAR}:sufixo"` (`:a` é modificador).
