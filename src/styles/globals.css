@@ -32,8 +32,8 @@
 
 @layer base {
   :root {
-    /* Fundo neutro claro (gray-50). Cards brancos, levemente destacados. */
-    --background: 210 20% 98%;
+    /* Fundo branco. Cards brancos, destacados pela borda/sombra. */
+    --background: 0 0% 100%;
     --foreground: 258 33% 16%;
     --card: 0 0% 100%;
     --card-foreground: 258 33% 16%;

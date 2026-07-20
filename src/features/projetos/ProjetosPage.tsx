@@ -80,7 +80,11 @@ function useProjetoRoute(): [string | null, (id: string | null) => void] {
 
 function StatusBadge({ status }: { status: Projeto["status"] }) {
   const meta = STATUS_META[status];
-  return <Badge variant={meta.badge}>{meta.label}</Badge>;
+  return (
+    <Badge variant={meta.badge} className="shrink-0">
+      {meta.label}
+    </Badge>
+  );
 }
 
 function SaudeDot({ saude }: { saude: number }) {
@@ -134,18 +138,15 @@ function ProjetoRow({
   return (
     <button
       type="button"
-      onClick={() => onOpen(projeto.id)}
+      onClick={() => onOpen(projeto.codigo)}
       className="block w-full px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
     >
       <div className="flex items-center gap-3">
-        <Badge variant="outline" className="shrink-0 font-mono text-[11px]">
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">
           {projeto.codigo}
-        </Badge>
+        </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate font-medium">{projeto.nome}</span>
-            <StatusBadge status={projeto.status} />
-          </div>
+          <div className="truncate text-sm font-medium">{projeto.nome}</div>
           {showEngenheiro && (
             <div className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
               <UserRound className="h-3.5 w-3.5 shrink-0" />
@@ -153,6 +154,7 @@ function ProjetoRow({
             </div>
           )}
         </div>
+        <StatusBadge status={projeto.status} />
         {showImportancia && <Prioridade nivel={projeto.prioridade} />}
         <SaudeDot saude={saudeAtual(projeto)} />
         <div className="hidden w-28 items-center gap-2 sm:flex">
@@ -519,33 +521,48 @@ function Relatorio({
         </div>
       </div>
 
-      {/* Métricas gerais */}
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Projetos" value={stats.total} />
-        <Stat label="Ativos" value={stats.emAndamento} />
-        <Stat label="Concluídos" value={stats.concluidos} />
-      </div>
-
       {/* Panorama gráfico, ponderado pela importância */}
-      <Card className="p-5">
-        <div className="grid gap-6 sm:grid-cols-3">
-          <div className="flex flex-col text-center">
-            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Progresso ponderado
-            </div>
-            <div className="flex flex-1 items-center justify-center">
-              <Donut value={metricas.progPond} />
-            </div>
+      <div className="grid gap-2 sm:grid-cols-8">
+        <Card className="flex flex-col p-5 text-center sm:col-span-2">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Progresso ponderado
           </div>
-          <div className="flex flex-col text-center">
-            <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Saúde ponderada
-            </div>
-            <div className="flex flex-1 items-center justify-center">
-              <Velocimetro saude={metricas.saudePond} showValor={false} />
-            </div>
+          <div className="flex flex-1 items-center justify-center">
+            <Donut value={metricas.progPond} />
           </div>
-          <div className="flex flex-col">
+        </Card>
+        <Card className="flex flex-col p-5 text-center sm:col-span-2">
+          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Saúde ponderada
+          </div>
+          <div className="flex flex-1 items-center justify-center">
+            <Velocimetro saude={metricas.saudePond} showValor={false} />
+          </div>
+          {(() => {
+            const m = saudeMeta(metricas.saudePond);
+            return (
+              <div
+                className="mt-2 inline-flex items-center justify-center gap-1.5 self-center rounded-full px-2.5 py-1 text-[11px] font-medium"
+                style={{ backgroundColor: `${m.color}1a`, color: m.color }}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: m.color }}
+                />
+                {m.label} · {m.nivel}/5
+              </div>
+            );
+          })()}
+        </Card>
+        <div className="flex flex-col gap-2 sm:col-span-4">
+          <Card className="p-5">
+            <div className="grid grid-cols-3 gap-2">
+              <MiniStat label="Projetos" value={stats.total} />
+              <MiniStat label="Ativos" value={stats.emAndamento} />
+              <MiniStat label="Concluídos" value={stats.concluidos} />
+            </div>
+          </Card>
+          <Card className="flex flex-1 flex-col p-5">
             <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               On-tracking
             </div>
@@ -558,9 +575,9 @@ function Relatorio({
                 />
               </div>
             </div>
-          </div>
+          </Card>
         </div>
-      </Card>
+      </div>
 
       {/* Sustentação da semana (acima dos projetos) */}
       {duty.length > 0 && (
@@ -617,9 +634,9 @@ function Relatorio({
 
 /* --------------------------------------------------------------------- página */
 
-function Stat({ label, value }: { label: string; value: number | string }) {
+function MiniStat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg border bg-card px-4 py-3 text-center">
+    <div className="text-center">
       <div className="text-2xl font-semibold leading-none tabular-nums">{value}</div>
       <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
@@ -662,8 +679,11 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
   }, [projetos]);
 
   // Detalhe de um projeto (busca em todos os quarters, não só no selecionado).
+  // A rota usa o código (ex.: PRJ-3); aceita o slug antigo como fallback.
   if (id) {
-    const projeto = DATA.projetos.find((p) => p.id === id);
+    const projeto =
+      DATA.projetos.find((p) => p.codigo === id) ??
+      DATA.projetos.find((p) => p.id === id);
     if (projeto) {
       return <ProjetoDetalhe projeto={projeto} onBack={() => navigate(null)} />;
     }

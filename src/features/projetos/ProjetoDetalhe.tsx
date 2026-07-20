@@ -91,18 +91,16 @@ export function ProjetoDetalhe({
         <Button variant="ghost" size="sm" className="-ml-2 mb-2 text-muted-foreground" onClick={onBack}>
           <ArrowLeft /> Voltar
         </Button>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="font-mono">
-            {projeto.codigo}
-          </Badge>
-          <h1 className="text-2xl font-bold tracking-tight">{projeto.nome}</h1>
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-xs text-muted-foreground">{projeto.codigo}</span>
           <Badge variant={meta.badge}>{meta.label}</Badge>
           <Prioridade nivel={projeto.prioridade} showLabel />
           <Badge variant="outline" className="font-mono">
             {quarterLabel(projeto.quarter)}
           </Badge>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <h1 className="text-xl font-bold tracking-tight">{projeto.nome}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <UserRound className="h-3.5 w-3.5" />
             {projeto.engenheiroNome ?? "Sem engenheiro"}

@@ -10,7 +10,7 @@ import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
 import { ProjetosPage } from "@/features/projetos/ProjetosPage";
-import { BACKOFFICE_PANEL_URL, checkEmbed, isChromeless } from "@/lib/embed";
+import { BACKOFFICE_PANEL_URL, checkEmbed, showsChrome } from "@/lib/embed";
 import type { TasksData } from "@/features/tasks/types";
 
 type Page = "tarefas" | "projetos" | "sustentacao" | "ferias";
@@ -170,12 +170,12 @@ export function App() {
 
   if (checkEmbed() !== "ok") return <EmbedRedirect />;
 
-  // Embutido com ?chrome=off (backoffice navega pelo próprio menu): esconde o TopNav.
-  const chromeless = isChromeless();
+  // Header + abas escondidos por padrão; só aparecem com ?chrome=true.
+  const chrome = showsChrome();
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-      {!chromeless && <TopNav page={page} onNavigate={navigate} />}
+      {chrome && <TopNav page={page} onNavigate={navigate} />}
       {state.status === "loading" && <LoadingState />}
       {state.status === "error" && <ErrorState error={state.error} />}
       {state.status === "ready" &&
