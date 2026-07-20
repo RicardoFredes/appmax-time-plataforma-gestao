@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { initials, firstName } from "@/lib/people";
+import { EXTERNAL_NAV_EVENT } from "@/lib/route-sync";
 import { scheduleForAll } from "@/features/sustentacao/schedule";
 import { GROUP_ACCENT } from "@/features/sustentacao/SustentacaoPage";
 import type { SustentacaoData } from "@/features/tasks/types";
@@ -37,6 +38,7 @@ import { ProjetosEditor } from "./ProjetosEditor";
 import { Prioridade } from "./Prioridade";
 import { Velocimetro } from "./Velocimetro";
 import type { Projeto, ProjetosData } from "./types";
+import { parseProjetosState, buildProjetosSearch } from "./url-state";
 import {
   PRIORIDADE_LABEL,
   STATUS_META,
@@ -117,6 +119,42 @@ function Avatar({ nome }: { nome: string | null }) {
 }
 
 /**
+ * Bloco-líder de uma linha em card `divide-y`: ícone + código mono + título
+ * (`text-sm font-medium`) + badges opcionais na primeira linha, e uma sub-linha
+ * discreta. Compartilhado pela linha de projeto e pela linha de sustentação para
+ * manter os estilos (tamanho do título, chip de código) em sincronia.
+ */
+function RowLead({
+  icon,
+  code,
+  title,
+  badges,
+  sub,
+}: {
+  icon: ReactNode;
+  code: ReactNode;
+  title: ReactNode;
+  badges?: ReactNode;
+  sub?: ReactNode;
+}) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {icon}
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">{code}</span>
+        <span className="truncate text-sm font-medium">{title}</span>
+        {badges}
+      </div>
+      {sub && (
+        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Uma linha de projeto (clicável → abre o detalhe). As diferenças por
  * agrupamento são controladas por flags:
  * - `showEngenheiro`: sub-linha com o responsável (oculta ao agrupar por engenheiro).
@@ -146,21 +184,19 @@ function ProjetoRow({
       className="block w-full px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
     >
       <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <Folder className="h-4 w-4 shrink-0 text-primary" />
-            <span className="shrink-0 font-mono text-xs text-muted-foreground">
-              {projeto.codigo}
-            </span>
-            <span className="truncate text-sm font-medium">{projeto.nome}</span>
-          </div>
-          {showEngenheiro && (
-            <div className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-              <UserRound className="h-3.5 w-3.5 shrink-0" />
-              {projeto.engenheiroNome ?? "Sem engenheiro"}
-            </div>
-          )}
-        </div>
+        <RowLead
+          icon={<Folder className="h-4 w-4 shrink-0 text-primary" />}
+          code={projeto.codigo}
+          title={projeto.nome}
+          sub={
+            showEngenheiro && (
+              <>
+                <UserRound className="h-3.5 w-3.5 shrink-0" />
+                {projeto.engenheiroNome ?? "Sem engenheiro"}
+              </>
+            )
+          }
+        />
         <StatusBadge status={projeto.status} />
         {showImportancia && <Prioridade nivel={projeto.prioridade} />}
         <SaudeDot saude={saudeAtual(projeto)} />
@@ -239,7 +275,7 @@ function comparadorProjeto(a: Projeto, b: Projeto): number {
 }
 
 /** Dimensão de organização do relatório. */
-type Dimensao = "prioridade" | "engenheiro" | "status";
+export type Dimensao = "prioridade" | "engenheiro" | "status";
 
 /** Uma seção do relatório: um cabeçalho e os projetos daquele grupo. */
 interface Secao {
@@ -483,16 +519,19 @@ function Relatorio({
   projetos,
   stats,
   sustentacao,
+  dim,
+  onDimChange,
   onOpen,
 }: {
   projetos: Projeto[];
   stats: { total: number; emAndamento: number; concluidos: number; semana: string | null };
   sustentacao: SustentacaoData | undefined;
+  dim: Dimensao;
+  onDimChange: (dim: Dimensao) => void;
   onOpen: (id: string) => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [copied, setCopied] = useState(false);
-  const [dim, setDim] = useState<Dimensao>("prioridade");
   const duty = useMemo(() => dutyResumo(sustentacao), [sustentacao]);
   const metricas = useMemo(() => computeMetricas(projetos, today), [projetos, today]);
   const { secoes, showEngenheiro, showImportancia } = useMemo(
@@ -528,7 +567,7 @@ function Relatorio({
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Visualizar por
           </span>
-          <Select value={dim} onValueChange={(v) => setDim(v as Dimensao)}>
+          <Select value={dim} onValueChange={(v) => onDimChange(v as Dimensao)}>
             <SelectTrigger className="h-9 w-36">
               <SelectValue />
             </SelectTrigger>
@@ -626,25 +665,29 @@ function Relatorio({
           </div>
           <Card className="divide-y">
             {duty.map((d) => (
-              <div key={d.escopo} className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: d.color }} />
-                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                    Grupo {d.grupo}
-                  </span>
-                  <span className="font-medium">{d.escopo}</span>
-                  {d.cobrindo && (
-                    <Badge variant="warning" className="gap-1">
-                      <Palmtree className="h-3 w-3" />
-                      cobre {firstName(d.cobrindo)}
-                    </Badge>
-                  )}
-                  {d.uncovered && <Badge variant="destructive">sem cobertura</Badge>}
-                </div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <UserRound className="h-3.5 w-3.5" />
-                  {d.nome}
-                </div>
+              <div key={d.escopo} className="flex px-4 py-3">
+                <RowLead
+                  icon={<ShieldCheck className="h-4 w-4 shrink-0" style={{ color: d.color }} />}
+                  code={`Grupo ${d.grupo}`}
+                  title={d.escopo}
+                  badges={
+                    <>
+                      {d.cobrindo && (
+                        <Badge variant="warning" className="gap-1">
+                          <Palmtree className="h-3 w-3" />
+                          cobre {firstName(d.cobrindo)}
+                        </Badge>
+                      )}
+                      {d.uncovered && <Badge variant="destructive">sem cobertura</Badge>}
+                    </>
+                  }
+                  sub={
+                    <>
+                      <UserRound className="h-3.5 w-3.5 shrink-0" />
+                      {d.nome}
+                    </>
+                  }
+                />
               </div>
             ))}
           </Card>
@@ -696,7 +739,36 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
     () => quartersDisponiveis(DATA.projetos, quarterAtual),
     [quarterAtual],
   );
-  const [quarter, setQuarter] = useState(quarterAtual);
+
+  // Filtros no query string (padrão do projeto — ver ./url-state.ts). Estado
+  // inicial vindo da URL; `quarter` inválido/ausente cai no atual.
+  const initial = useMemo(() => parseProjetosState(window.location.search), []);
+  const [quarter, setQuarter] = useState(() =>
+    initial.quarter && quarters.includes(initial.quarter) ? initial.quarter : quarterAtual,
+  );
+  const [dim, setDim] = useState<Dimensao>(initial.dim);
+
+  // Reflete os filtros na URL (replaceState — não polui o histórico).
+  useEffect(() => {
+    const search = buildProjetosSearch(
+      { quarter, dim, quarterAtual },
+      window.location.search,
+    );
+    const url = window.location.pathname + search + window.location.hash;
+    window.history.replaceState(null, "", url);
+  }, [quarter, dim, quarterAtual]);
+
+  // Re-lê a URL quando o backoffice (embed) empurra novos filtros — sem isto o
+  // estado seria lido só no mount e o sync backoffice -> painel não refletiria.
+  useEffect(() => {
+    const reread = () => {
+      const s = parseProjetosState(window.location.search);
+      setQuarter(s.quarter && quarters.includes(s.quarter) ? s.quarter : quarterAtual);
+      setDim(s.dim);
+    };
+    window.addEventListener(EXTERNAL_NAV_EVENT, reread);
+    return () => window.removeEventListener(EXTERNAL_NAV_EVENT, reread);
+  }, [quarters, quarterAtual]);
 
   const projetos = useMemo(
     () => DATA.projetos.filter((p) => p.quarter === quarter),
@@ -800,6 +872,8 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
           projetos={projetos}
           stats={stats}
           sustentacao={sustentacao}
+          dim={dim}
+          onDimChange={setDim}
           onOpen={(pid) => navigate(pid)}
         />
       )}

@@ -65,6 +65,13 @@ interativo que registra o progresso semanal em `projetos.json`) · `pnpm run dep
 - Deploy: Cloudflare Pages, projeto `appmax-time-plataforma-tarefas`. O passo `wrangler
   pages deploy` é bloqueado no modo auto (exfiltração) — o usuário roda manualmente
   (`! pnpm exec wrangler pages deploy`).
+- **Estado na URL (padrão)**: **rota no hash** (`#/projetos/<id>`), **filtros no query
+  string** via History API (`replaceState`, não polui o histórico). Cada página tem um
+  `url-state.ts` com `parseXState(search)`/`buildXSearch(...)` (grava só o que difere do
+  padrão; **preserva** params de fora, ex.: `chrome`); a página lê no mount, reflete num
+  `useEffect`, e re-lê ao ouvir `EXTERNAL_NAV_EVENT` (empurrão do backoffice via
+  `route-sync.ts`). Ex.: `tasks/url-state.ts`+`TasksPanel`; `projetos/url-state.ts`
+  (`quarter`, `por`)+`ProjetosPage`.
 - **Embed-only**: o painel só renderiza dentro do iframe do backoffice autenticado. Duas
   camadas: header `frame-ancestors` (`public/_headers`) + guarda no boot (`src/lib/embed.ts`,
   que **redireciona** uso top-level para `BACKOFFICE_PANEL_URL`; desligada em dev). A
