@@ -9,11 +9,15 @@ export function Velocimetro({
   saude,
   showValor = true,
 }: {
-  saude: number;
+  /** Saúde 1–5, ou `null` quando o projeto não tem on-tracking (só marcos). */
+  saude: number | null;
   /** Exibe o número (n/5) e o rótulo ao lado do medidor. */
   showValor?: boolean;
 }) {
-  const { nivel, label, color } = saudeMeta(saude);
+  const semSaude = saude === null;
+  const meta = semSaude ? null : saudeMeta(saude);
+  const nivel = meta?.nivel ?? 0;
+  const color = meta?.color ?? "#94a3b8"; // slate quando sem saúde
 
   const cx = 70;
   const cy = 72;
@@ -31,7 +35,7 @@ export function Velocimetro({
   };
 
   // Ângulo do ponteiro: nível 1 → 180° (esquerda), nível 5 → 0° (direita).
-  const clamped = Math.max(1, Math.min(5, saude));
+  const clamped = Math.max(1, Math.min(5, saude ?? 3));
   const needleDeg = (180 * (5 - clamped)) / 4;
   const [nx, ny] = pt(needleDeg, r - 6);
 
@@ -53,17 +57,19 @@ export function Velocimetro({
           />
         );
       })}
-      {/* Ponteiro */}
-      <line
-        x1={cx}
-        y1={cy}
-        x2={nx}
-        y2={ny}
-        className="stroke-foreground"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-      />
-      <circle cx={cx} cy={cy} r={5} className="fill-foreground" />
+      {/* Ponteiro (omitido quando não há saúde) */}
+      {!semSaude && (
+        <line
+          x1={cx}
+          y1={cy}
+          x2={nx}
+          y2={ny}
+          className="stroke-foreground"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+      )}
+      <circle cx={cx} cy={cy} r={5} className={semSaude ? "fill-muted-foreground/40" : "fill-foreground"} />
     </svg>
   );
 
@@ -73,13 +79,26 @@ export function Velocimetro({
     <div className="flex items-center gap-3">
       {medidor}
       <div className="shrink-0">
-        <div className="text-3xl font-bold leading-none tabular-nums" style={{ color }}>
-          {nivel}
-          <span className="text-base font-medium text-muted-foreground">/5</span>
-        </div>
-        <div className="mt-1 text-xs font-medium" style={{ color }}>
-          {label}
-        </div>
+        {semSaude ? (
+          <>
+            <div className="text-3xl font-bold leading-none tabular-nums text-muted-foreground">
+              —
+            </div>
+            <div className="mt-1 text-xs font-medium text-muted-foreground">
+              Sem on-tracking
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-3xl font-bold leading-none tabular-nums" style={{ color }}>
+              {nivel}
+              <span className="text-base font-medium text-muted-foreground">/5</span>
+            </div>
+            <div className="mt-1 text-xs font-medium" style={{ color }}>
+              {meta!.label}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

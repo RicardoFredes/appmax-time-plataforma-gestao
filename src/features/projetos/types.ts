@@ -20,10 +20,11 @@ export interface RegistroSemanal {
   /** Nota livre sobre como andou o projeto na semana. */
   nota: string;
   /**
-   * Demarcação opcional: registro de **início** ou **fim** do projeto. Marcos
-   * não têm saúde/on-tracking (a `saude` é ignorada) e recebem ícone de bandeira.
+   * Marco opcional — registro que **não tem saúde/on-tracking** (a `saude` é
+   * ignorada): `inicio`/`fim` demarcam o começo/término do projeto (ícone de
+   * bandeira); `info` é uma atualização puramente informativa (ícone de info).
    */
-  marco?: "inicio" | "fim";
+  marco?: "inicio" | "fim" | "info";
 }
 
 export interface Projeto {

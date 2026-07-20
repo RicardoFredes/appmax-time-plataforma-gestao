@@ -90,13 +90,29 @@ export function progressoAtual(p: Projeto): number {
   return ultimoRegistro(p)?.progresso ?? 0;
 }
 
-/** Saúde atual (1–5), do último registro real; 3 (neutra) se só houver marcos. */
-export function saudeAtual(p: Projeto): number {
+/** Status ainda sem execução real — fora da conta de Progresso. */
+export const STATUS_FORA_DO_PROGRESSO: ProjetoStatus[] = ["discovery", "refinement"];
+
+/**
+ * Se o projeto entra na conta de Progresso do panorama. Exclui os status
+ * `discovery` e `refinement` (ainda não há execução), para não puxarem a
+ * média para baixo com 0%.
+ */
+export function contaNoProgresso(p: Projeto): boolean {
+  return !STATUS_FORA_DO_PROGRESSO.includes(p.status);
+}
+
+/**
+ * Saúde atual (1–5), do último registro **real** (sem `marco`). `null` quando o
+ * projeto só tem marcos (início/fim/info) — nesse caso não entra na conta de
+ * on-tracking (média ponderada, distribuição): é filtrado, não conta como neutro.
+ */
+export function saudeAtual(p: Projeto): number | null {
   const rs = registrosOrdenados(p);
   for (let i = rs.length - 1; i >= 0; i--) {
     if (!rs[i].marco) return rs[i].saude;
   }
-  return 3;
+  return null;
 }
 
 /**
@@ -173,13 +189,22 @@ export function progressoMedioPonderado(projetos: Projeto[]): number {
   );
 }
 
-/** Saúde média ponderada pela prioridade (1 casa decimal; 0 se vazia). */
+/**
+ * Saúde média ponderada pela prioridade (1 casa decimal; 0 se ninguém tiver
+ * saúde). Projetos sem saúde (só marcos) são **ignorados** — não entram no peso.
+ */
 export function saudeMediaPonderada(projetos: Projeto[]): number {
-  const w = pesoTotal(projetos);
+  let soma = 0;
+  let w = 0;
+  for (const p of projetos) {
+    const s = saudeAtual(p);
+    if (s === null) continue;
+    const peso = Math.max(1, p.prioridade);
+    soma += s * peso;
+    w += peso;
+  }
   if (w === 0) return 0;
-  const media =
-    projetos.reduce((acc, p) => acc + saudeAtual(p) * Math.max(1, p.prioridade), 0) / w;
-  return Math.round(media * 10) / 10;
+  return Math.round((soma / w) * 10) / 10;
 }
 
 /** Ordena projetos: status (STATUS_ORDER), depois maior progresso, depois nome. */

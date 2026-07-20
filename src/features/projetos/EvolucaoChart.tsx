@@ -5,7 +5,8 @@ import type { RegistroSemanal } from "./types";
 
 const ACCENT = "#9b6afa"; // roxo Appmax
 const MARCO_COLOR = { inicio: "#9b6afa", fim: "#10b981" } as const; // roxo / emerald
-const MARCO_LABEL = { inicio: "Início", fim: "Fim" } as const;
+const MARCO_LABEL = { inicio: "Início", fim: "Fim", info: "Info" } as const;
+const INFO_COLOR = "#64748b"; // slate (marco informativo, sem saúde)
 
 const W = 460;
 const H = 210;
@@ -70,9 +71,9 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
         <path d={linePath} fill="none" stroke={ACCENT} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
       )}
 
-      {/* Pontos: bandeira nos marcos (início/fim, sem saúde), círculo colorido nos demais */}
+      {/* Pontos: bandeira (início/fim) ou círculo vazado (info) nos marcos; colorido pela saúde nos demais */}
       {pts.map((p, i) => {
-        if (p.r.marco) {
+        if (p.r.marco === "inicio" || p.r.marco === "fim") {
           const color = MARCO_COLOR[p.r.marco];
           // Mastro para cima; para baixo quando o ponto está colado no topo.
           const up = p.y - 16 >= PAD.top;
@@ -88,6 +89,23 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
               <path d={`M${p.x},${tip} L${p.x + 7},${midOuter} L${p.x},${midInner} Z`} fill={color} />
               <circle cx={p.x} cy={p.y} r={3} fill={color} className="stroke-background" strokeWidth={2} />
             </g>
+          );
+        }
+        if (p.r.marco === "info") {
+          return (
+            <circle
+              key={p.r.semana}
+              cx={p.x}
+              cy={p.y}
+              r={4.5}
+              className="fill-background"
+              stroke={INFO_COLOR}
+              strokeWidth={2}
+            >
+              <title>
+                Informativo · {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}%
+              </title>
+            </circle>
           );
         }
         return (

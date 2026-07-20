@@ -33,7 +33,7 @@ interface RegistroSemanal {
   progresso: number;
   saude: number;
   nota: string;
-  marco?: "inicio" | "fim";
+  marco?: "inicio" | "fim" | "info";
 }
 
 interface Projeto {

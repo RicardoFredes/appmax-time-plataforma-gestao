@@ -51,6 +51,7 @@ import {
   quarterDe,
   quarterLabel,
   quartersDisponiveis,
+  contaNoProgresso,
   saudeAtual,
   saudeMediaPonderada,
   saudeMeta,
@@ -93,7 +94,18 @@ function StatusBadge({ status }: { status: Projeto["status"] }) {
   );
 }
 
-function SaudeDot({ saude }: { saude: number }) {
+function SaudeDot({ saude }: { saude: number | null }) {
+  if (saude === null) {
+    return (
+      <span
+        className="inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[11px] font-medium text-muted-foreground"
+        title="Sem on-tracking"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+        —
+      </span>
+    );
+  }
   const m = saudeMeta(saude);
   return (
     <span
@@ -227,6 +239,8 @@ function ProjetoRow({
 interface Metricas {
   progPond: number;
   progSimples: number;
+  /** Quantos projetos entram na conta de progresso (exceto discovery/refinement). */
+  progConsiderados: number;
   saudePond: number;
   emRisco: number;
   atencao: number;
@@ -239,16 +253,20 @@ function computeMetricas(projetos: Projeto[], today: Date): Metricas {
     p.prazo &&
     p.status !== "done" &&
     differenceInCalendarDays(startOfDay(parseISO(p.prazo)), today) < 0;
-  const mediaSimples = projetos.length
-    ? Math.round(projetos.reduce((s, p) => s + progressoAtual(p), 0) / projetos.length)
+  // Progresso ignora discovery/refinement (ainda sem execução real).
+  const considerados = projetos.filter(contaNoProgresso);
+  const mediaSimples = considerados.length
+    ? Math.round(considerados.reduce((s, p) => s + progressoAtual(p), 0) / considerados.length)
     : 0;
   return {
-    progPond: progressoMedioPonderado(projetos),
+    progPond: progressoMedioPonderado(considerados),
     progSimples: mediaSimples,
+    progConsiderados: considerados.length,
     saudePond: saudeMediaPonderada(projetos),
-    emRisco: projetos.filter((p) => saudeAtual(p) <= 2).length,
+    // Projetos sem saúde (só marcos) não entram em nenhuma faixa da distribuição.
+    emRisco: projetos.filter((p) => (saudeAtual(p) ?? 3) <= 2).length,
     atencao: projetos.filter((p) => saudeAtual(p) === 3).length,
-    onTrack: projetos.filter((p) => saudeAtual(p) >= 4).length,
+    onTrack: projetos.filter((p) => (saudeAtual(p) ?? 0) >= 4).length,
     vencidos: projetos.filter(venc).length,
   };
 }
@@ -269,7 +287,8 @@ function dutyResumo(sustentacao: SustentacaoData | undefined) {
 /** Comparador dentro de um grupo: prioridade desc, pior saúde primeiro, nome. */
 function comparadorProjeto(a: Projeto, b: Projeto): number {
   if (b.prioridade !== a.prioridade) return b.prioridade - a.prioridade;
-  const s = saudeAtual(a) - saudeAtual(b);
+  // Sem saúde (só marcos) ordena como neutro (3).
+  const s = (saudeAtual(a) ?? 3) - (saudeAtual(b) ?? 3);
   if (s !== 0) return s;
   return a.nome.localeCompare(b.nome, "pt-BR");
 }
@@ -424,10 +443,11 @@ function buildReport(
     for (const p of s.projetos) {
       const u = ultimoRegistro(p);
       const nota = u?.nota?.trim() || p.descricao || "—";
-      const sm = saudeMeta(saudeAtual(p));
+      const sa = saudeAtual(p);
+      const onTrack = sa !== null ? ` · ${saudeMeta(sa).label} (${saudeMeta(sa).nivel}/5)` : "";
       const resp = p.engenheiroNome ?? "Sem engenheiro";
       L.push(
-        `  - [${p.codigo}] ${p.nome} (${resp}) — ${progressoAtual(p)}% · ${STATUS_META[p.status].label} · ${sm.label} (${sm.nivel}/5): ${nota}`,
+        `  - [${p.codigo}] ${p.nome} (${resp}) — ${progressoAtual(p)}% · ${STATUS_META[p.status].label}${onTrack}: ${nota}`,
       );
     }
     L.push("");
@@ -606,6 +626,12 @@ function Relatorio({
               Simples{" "}
               <span className="font-semibold tabular-nums text-foreground">{metricas.progSimples}%</span>
             </span>
+          </div>
+          <div
+            className="mt-1 text-[10px] text-muted-foreground"
+            title="Exclui projetos em Discovery e Refinement"
+          >
+            {metricas.progConsiderados} de {projetos.length} projetos
           </div>
         </Card>
         <Card className="flex flex-col p-5 text-center sm:col-span-2">

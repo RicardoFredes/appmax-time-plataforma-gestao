@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   CalendarDays,
   Flag,
+  Info,
   Minus,
   TrendingDown,
   TrendingUp,
@@ -57,10 +58,11 @@ function Delta({ value }: { value: number }) {
   );
 }
 
-/** Metadados de exibição dos marcos (registros de início/fim do projeto). */
+/** Metadados de exibição dos marcos (registros sem on-tracking). */
 const MARCO_META = {
-  inicio: { label: "Início do projeto", color: "#9b6afa" }, // roxo Appmax
-  fim: { label: "Fim do projeto", color: "#10b981" }, // emerald (done)
+  inicio: { label: "Início do projeto", color: "#9b6afa", Icon: Flag }, // roxo Appmax
+  fim: { label: "Fim do projeto", color: "#10b981", Icon: Flag }, // emerald (done)
+  info: { label: "Informativo", color: "#64748b", Icon: Info }, // slate
 } as const;
 
 function SaudeBadge({ saude }: { saude: number }) {
@@ -208,7 +210,7 @@ export function ProjetoDetalhe({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="inline-flex items-center gap-1.5 text-sm font-medium">
                       {m ? (
-                        <Flag className="h-3.5 w-3.5" style={{ color: m.color }} />
+                        <m.Icon className="h-3.5 w-3.5" style={{ color: m.color }} />
                       ) : (
                         <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
