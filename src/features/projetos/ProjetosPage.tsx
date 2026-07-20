@@ -627,12 +627,6 @@ function Relatorio({
               <span className="font-semibold tabular-nums text-foreground">{metricas.progSimples}%</span>
             </span>
           </div>
-          <div
-            className="mt-1 text-[10px] text-muted-foreground"
-            title="Exclui projetos em Discovery e Refinement"
-          >
-            {metricas.progConsiderados} de {projetos.length} projetos
-          </div>
         </Card>
         <Card className="flex flex-col p-5 text-center sm:col-span-2">
           <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -659,9 +653,14 @@ function Relatorio({
         </Card>
         <div className="flex flex-col gap-2 sm:col-span-4">
           <Card className="p-5">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <MiniStat label="Projetos" value={stats.total} />
               <MiniStat label="Ativos" value={stats.emAndamento} />
+              <MiniStat
+                label="No progresso"
+                value={metricas.progConsiderados}
+                title="Base do cálculo de Progresso: exclui Discovery e Refinement"
+              />
               <MiniStat label="Concluídos" value={stats.concluidos} />
             </div>
           </Card>
@@ -745,9 +744,17 @@ function Relatorio({
 
 /* --------------------------------------------------------------------- página */
 
-function MiniStat({ label, value }: { label: string; value: number | string }) {
+function MiniStat({
+  label,
+  value,
+  title,
+}: {
+  label: string;
+  value: number | string;
+  title?: string;
+}) {
   return (
-    <div className="text-center">
+    <div className="text-center" title={title}>
       <div className="text-2xl font-semibold leading-none tabular-nums">{value}</div>
       <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
