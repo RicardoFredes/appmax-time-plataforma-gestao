@@ -10,6 +10,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  Folder,
   FolderKanban,
   Palmtree,
   ShieldCheck,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { initials, firstName } from "@/lib/people";
 import { scheduleForAll } from "@/features/sustentacao/schedule";
+import { GROUP_ACCENT } from "@/features/sustentacao/SustentacaoPage";
 import type { SustentacaoData } from "@/features/tasks/types";
 import projetosData from "./projetos.json";
 import { ProjetoDetalhe } from "./ProjetoDetalhe";
@@ -142,11 +144,14 @@ function ProjetoRow({
       className="block w-full px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
     >
       <div className="flex items-center gap-3">
-        <span className="shrink-0 font-mono text-xs text-muted-foreground">
-          {projeto.codigo}
-        </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{projeto.nome}</div>
+          <div className="flex items-center gap-1.5">
+            <Folder className="h-4 w-4 shrink-0 text-primary" />
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              {projeto.codigo}
+            </span>
+            <span className="truncate text-sm font-medium">{projeto.nome}</span>
+          </div>
           {showEngenheiro && (
             <div className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
               <UserRound className="h-3.5 w-3.5 shrink-0" />
@@ -213,11 +218,13 @@ function computeMetricas(projetos: Projeto[], today: Date): Metricas {
 /** Nome + escopo de quem está de plantão nesta semana, por grupo. */
 function dutyResumo(sustentacao: SustentacaoData | undefined) {
   if (!sustentacao) return [];
-  return scheduleForAll(sustentacao, new Date()).map((g) => ({
+  return scheduleForAll(sustentacao, new Date()).map((g, i) => ({
+    grupo: g.grupo,
     escopo: g.escopo,
     nome: g.current?.effective.name ?? "—",
     cobrindo: g.current?.coveringFor?.name ?? null,
     uncovered: g.current?.uncovered ?? false,
+    color: GROUP_ACCENT[i % GROUP_ACCENT.length],
   }));
 }
 
@@ -618,7 +625,11 @@ function Relatorio({
           <Card className="divide-y">
             {duty.map((d) => (
               <div key={d.escopo} className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: d.color }} />
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    Grupo {d.grupo}
+                  </span>
                   <span className="font-medium">{d.escopo}</span>
                   {d.cobrindo && (
                     <Badge variant="warning" className="gap-1">

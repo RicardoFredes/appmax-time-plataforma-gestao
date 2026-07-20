@@ -82,8 +82,12 @@ export function ProjetoDetalhe({
   const atual = progressoAtual(projeto);
   const trend = tendencia(projeto);
 
+  const fmtData = (d: string | null) =>
+    d ? format(startOfDay(parseISO(d)), "dd MMM yyyy", { locale: ptBR }) : "—";
   const prazo = projeto.prazo ? startOfDay(parseISO(projeto.prazo)) : null;
-  const diasPrazo = prazo ? differenceInCalendarDays(prazo, today) : null;
+  // Relativo do prazo só faz sentido enquanto o projeto está aberto.
+  const diasPrazo =
+    prazo && !projeto.fechamento ? differenceInCalendarDays(prazo, today) : null;
 
   return (
     <div className="space-y-6">
@@ -107,15 +111,22 @@ export function ProjetoDetalhe({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
-            {prazo
-              ? `${format(prazo, "dd MMM yyyy", { locale: ptBR })}${
-                  diasPrazo !== null
-                    ? diasPrazo < 0
-                      ? ` · vencido há ${-diasPrazo}d`
-                      : ` · em ${diasPrazo}d`
-                    : ""
-                }`
-              : "sem prazo"}
+            Início:{" "}
+            <span className="font-medium text-foreground">{fmtData(projeto.inicio)}</span>
+          </span>
+          <span>
+            Previsão:{" "}
+            <span className="font-medium text-foreground">{fmtData(projeto.prazo)}</span>
+            {diasPrazo !== null && (
+              <span className={diasPrazo < 0 ? "text-rose-600 dark:text-rose-400" : undefined}>
+                {" "}
+                · {diasPrazo < 0 ? `vencido há ${-diasPrazo}d` : `em ${diasPrazo}d`}
+              </span>
+            )}
+          </span>
+          <span>
+            Fechamento:{" "}
+            <span className="font-medium text-foreground">{fmtData(projeto.fechamento)}</span>
           </span>
         </div>
         {projeto.descricao && (

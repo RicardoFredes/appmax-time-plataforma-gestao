@@ -14,7 +14,8 @@ import {
 } from "./schedule";
 
 /** Paleta por grupo (cor da faixa/realce). */
-const GROUP_ACCENT = ["#9b6afa", "#0ea5e9"]; // roxo Appmax, sky
+/** Cor de realce por grupo (na ordem dos grupos). Reusada no relatório de projetos. */
+export const GROUP_ACCENT = ["#9b6afa", "#0ea5e9"]; // roxo Appmax, sky
 
 function fmtRange(start: Date, end: Date): string {
   const sameMonth = start.getMonth() === end.getMonth();

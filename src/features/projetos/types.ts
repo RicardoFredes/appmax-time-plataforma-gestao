@@ -31,8 +31,12 @@ export interface Projeto {
   engenheiroEmail: string | null;
   /** Nome de exibição do engenheiro, ou `null` se sem dono. */
   engenheiroNome: string | null;
-  /** Prazo `YYYY-MM-DD`, ou `null` se sem data definida. */
+  /** Data de início `YYYY-MM-DD`, ou `null`. */
+  inicio: string | null;
+  /** Previsão de término `YYYY-MM-DD`, ou `null` se sem data definida. */
   prazo: string | null;
+  /** Data de fechamento real `YYYY-MM-DD`, ou `null` enquanto aberto. */
+  fechamento: string | null;
   status: ProjetoStatus;
   /** Importância/prioridade: 1 (mínima) a 5 (máxima). Peso nas métricas gerais. */
   prioridade: number;

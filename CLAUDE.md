@@ -94,3 +94,4 @@ de sustentação a partir de `config.json`/`vacations.json`) · `pnpm run deploy
 - [frontend.md](docs/frontend.md) — painel, abas, filtros, sort, status, página de sustentação.
 - [decisions.md](docs/decisions.md) — decisões de projeto e porquês.
 - [deploy.md](docs/deploy.md) — Cloudflare Pages e exposição de dados.
+- [projetos-db-model.md](docs/projetos-db-model.md) — proposta de modelagem relacional dos projetos (hoje em JSON à mão).
