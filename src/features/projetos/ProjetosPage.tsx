@@ -183,6 +183,7 @@ function ProjetoRow({
 
 interface Metricas {
   progPond: number;
+  progSimples: number;
   saudePond: number;
   emRisco: number;
   atencao: number;
@@ -195,8 +196,12 @@ function computeMetricas(projetos: Projeto[], today: Date): Metricas {
     p.prazo &&
     p.status !== "concluido" &&
     differenceInCalendarDays(startOfDay(parseISO(p.prazo)), today) < 0;
+  const mediaSimples = projetos.length
+    ? Math.round(projetos.reduce((s, p) => s + progressoAtual(p), 0) / projetos.length)
+    : 0;
   return {
     progPond: progressoMedioPonderado(projetos),
+    progSimples: mediaSimples,
     saudePond: saudeMediaPonderada(projetos),
     emRisco: projetos.filter((p) => saudeAtual(p) <= 2).length,
     atencao: projetos.filter((p) => saudeAtual(p) === 3).length,
@@ -385,32 +390,44 @@ function buildReport(
   return L.join("\n").trim();
 }
 
-/** Gráfico de rosca (donut) com a porcentagem no centro. */
-function Donut({ value }: { value: number }) {
-  const pct = Math.max(0, Math.min(100, value));
+/**
+ * Rosca com dois anéis concêntricos: o externo é a média ponderada (destaque,
+ * roxo) e o interno a média simples (laranja). O centro mostra a ponderada.
+ */
+function Donut({ value, inner }: { value: number; inner: number }) {
   const size = 104;
-  const stroke = 12;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
+  const stroke = 7;
+  const gap = 1;
   const center = size / 2;
+  const rings = [
+    { pct: Math.max(0, Math.min(100, value)), r: (size - stroke) / 2, color: "#9b6afa" },
+    { pct: Math.max(0, Math.min(100, inner)), r: (size - stroke) / 2 - stroke - gap, color: "#f97316" },
+  ];
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        <circle cx={center} cy={center} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
-        <circle
-          cx={center}
-          cy={center}
-          r={r}
-          fill="none"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          className="stroke-primary"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct / 100)}
-        />
+        {rings.map((ring, i) => {
+          const c = 2 * Math.PI * ring.r;
+          return (
+            <g key={i}>
+              <circle cx={center} cy={center} r={ring.r} fill="none" strokeWidth={stroke} className="stroke-muted" />
+              <circle
+                cx={center}
+                cy={center}
+                r={ring.r}
+                fill="none"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                stroke={ring.color}
+                strokeDasharray={c}
+                strokeDashoffset={c * (1 - ring.pct / 100)}
+              />
+            </g>
+          );
+        })}
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold tabular-nums">
-        {pct}%
+      <div className="absolute inset-0 flex items-center justify-center text-xl font-bold tabular-nums">
+        {rings[0].pct}%
       </div>
     </div>
   );
@@ -525,10 +542,22 @@ function Relatorio({
       <div className="grid gap-2 sm:grid-cols-8">
         <Card className="flex flex-col p-5 text-center sm:col-span-2">
           <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Progresso ponderado
+            Progresso
           </div>
           <div className="flex flex-1 items-center justify-center">
-            <Donut value={metricas.progPond} />
+            <Donut value={metricas.progPond} inner={metricas.progSimples} />
+          </div>
+          <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "#9b6afa" }} />
+              Ponderada{" "}
+              <span className="font-semibold tabular-nums text-foreground">{metricas.progPond}%</span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "#f97316" }} />
+              Simples{" "}
+              <span className="font-semibold tabular-nums text-foreground">{metricas.progSimples}%</span>
+            </span>
           </div>
         </Card>
         <Card className="flex flex-col p-5 text-center sm:col-span-2">

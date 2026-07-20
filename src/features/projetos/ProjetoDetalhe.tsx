@@ -119,21 +119,21 @@ export function ProjetoDetalhe({
           </span>
         </div>
         {projeto.descricao && (
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{projeto.descricao}</p>
+          <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{projeto.descricao}</p>
         )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Coluna 1: progresso + on-tracking (card único) e gráfico */}
         <div className="space-y-4">
-          <Card className="p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-              <div className="flex-1">
-                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Progresso atual
-                </div>
-                <div className="mt-1 flex items-end gap-2">
-                  <span className="text-3xl font-bold leading-none tabular-nums">{atual}%</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="flex flex-col p-4">
+              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Progresso atual
+              </div>
+              <div className="flex flex-1 flex-col justify-center">
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl font-bold leading-none tabular-nums">{atual}%</span>
                   {trend !== null && (
                     <span className="mb-0.5">
                       <Delta value={trend} />
@@ -147,15 +147,16 @@ export function ProjetoDetalhe({
                   />
                 </div>
               </div>
-              <div className="hidden w-px self-stretch bg-border sm:block" />
-              <div className="flex-1">
-                <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  On-tracking
-                </div>
+            </Card>
+            <Card className="flex flex-col p-4">
+              <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                On-tracking
+              </div>
+              <div className="flex flex-1 items-center">
                 <Velocimetro saude={saudeAtual(projeto)} />
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
           <Card className="p-4">
             <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
