@@ -21,6 +21,7 @@ import {
   type Layout,
   type View,
 } from "./url-state";
+import { EXTERNAL_NAV_EVENT } from "@/lib/route-sync";
 import type { Task, TasksData } from "./types";
 
 const EMPTY_FILTERS: FiltersState = {
@@ -76,6 +77,23 @@ export function TasksPanel({ data }: { data: TasksData }) {
     const url = window.location.pathname + search + window.location.hash;
     window.history.replaceState(null, "", url);
   }, [view, layout, filters, lane, people, showDone, sort]);
+
+  // Re-lê a URL quando o backoffice (embed) empurra novos filtros. Sem isto o
+  // estado seria lido só no mount, e o sync backoffice -> painel não refletiria.
+  useEffect(() => {
+    const reread = () => {
+      const s = parsePanelState(window.location.search);
+      setView(s.view);
+      setLayout(s.layout);
+      setFilters(s.filters);
+      setLane(s.lane);
+      setPeople(new Set(s.people));
+      setShowDone(s.showDone);
+      setSort(s.sort);
+    };
+    window.addEventListener(EXTERNAL_NAV_EVENT, reread);
+    return () => window.removeEventListener(EXTERNAL_NAV_EVENT, reread);
+  }, []);
 
   // Membros do time (definidos em sync/config.json), indexados por e-mail.
   const teamByEmail = useMemo(() => {

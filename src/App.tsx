@@ -11,6 +11,7 @@ import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
 import { ProjetosPage } from "@/features/projetos/ProjetosPage";
 import { BACKOFFICE_PANEL_URL, checkEmbed, showsChrome } from "@/lib/embed";
+import { initRouteSync } from "@/lib/route-sync";
 import type { TasksData } from "@/features/tasks/types";
 
 type Page = "tarefas" | "projetos" | "sustentacao" | "ferias";
@@ -167,6 +168,12 @@ function EmbedRedirect() {
 export function App() {
   const state = useTasksData();
   const [page, navigate] = usePage();
+
+  // Sincroniza rota + filtros com a URL do backoffice quando embutido.
+  useEffect(() => {
+    if (checkEmbed() !== "ok") return;
+    return initRouteSync();
+  }, []);
 
   if (checkEmbed() !== "ok") return <EmbedRedirect />;
 
