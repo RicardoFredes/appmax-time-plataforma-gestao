@@ -24,10 +24,3 @@ Admin - Nova UI/UX	04/12/2026	Ricardo Fredes	João Justo	Staff	Fase 1: provision
 IB - Apartar Frontend	23/10/2026	Ricardo Fredes	João Justo	Staff
 
 
-Migrador de contas
-Felipe integrando as APIs - 90%
-
-Migração Vue 3 - Tickets
-Finalizado - subiu quarta passada
-
-MED 2.0
