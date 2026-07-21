@@ -33,7 +33,7 @@
       "descricao": "Fase 1: ajustes na UX. Fase 2: integração com as APIs.",
       "registros": [
         { "semana": "2026-07-17", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 5, "saude": 4, "nota": "Iniciado o trabalho de frontend, que compreende: ajustes pontuais na jornada e integração com as APIs." }
+        { "semana": "2026-07-20", "progresso": 5, "saude": 4, "nota": "Witer começou a integrar as APIs." }
       ]
     },
     {
@@ -68,7 +68,7 @@
       "descricao": "Migração de contas.",
       "registros": [
         { "semana": "2026-07-10", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 50, "saude": 5, "nota": "Frontend do backoffice está pronto e com 80% das APIs integradas. JJ saiu de férias e repassou o contexto para o Felipe assumir." }
+        { "semana": "2026-07-20", "progresso": 90, "saude": 5, "nota": "Felipe assumiu e está integrando as APIs." }
       ]
     },
     {
@@ -304,13 +304,13 @@
       "engenheiroNome": "Felipe Carvalho",
       "inicio": null,
       "prazo": "2026-09-25",
-      "fechamento": null,
-      "status": "paused",
+      "fechamento": "2026-07-14",
+      "status": "done",
       "prioridade": 1,
       "quarter": "2026-Q3",
       "descricao": "Migração de Tickets para Vue 3.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 30, "saude": 3, "nota": "Está pausado, pois o Felipe está priorizando outras demandas." }
+        { "semana": "2026-07-14", "progresso": 100, "saude": 3, "nota": "Finalizado.", "marco": "fim" }
       ]
     },
     {

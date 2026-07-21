@@ -22,3 +22,12 @@ Migração Vue 3 - Estornos	09/10/2026	Ricardo Fredes	Witerlland Blando Nogueira
 Telemetria Otel	30/10/2026	Ricardo Fredes	João Justo	Staff	Após o deploy em produção, implementar nos Clients
 Admin - Nova UI/UX	04/12/2026	Ricardo Fredes	João Justo	Staff	Fase 1: provisionamento de ambiente; Fase 2: Base comum; Fase 3: módulo piloto CRM
 IB - Apartar Frontend	23/10/2026	Ricardo Fredes	João Justo	Staff
+
+
+Migrador de contas
+Felipe integrando as APIs - 90%
+
+Migração Vue 3 - Tickets
+Finalizado - subiu quarta passada
+
+MED 2.0
