@@ -47,7 +47,7 @@ urgência e **reconstrói a escala de sustentação** a partir de `config.json`/
 }
 ```
 
-Credenciais ficam no `.env` (ver `.env.example`): `JIRA_BASE_URL`, `JIRA_EMAIL`,
+Credenciais ficam no `.env` (ver `.env.sample`): `JIRA_BASE_URL`, `JIRA_EMAIL`,
 `JIRA_API_TOKEN`. `.env` está no `.gitignore`.
 
 ## Escala de sustentação — `config.json` (`sustentacao`) + `vacations.json`

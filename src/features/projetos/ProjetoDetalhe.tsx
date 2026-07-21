@@ -9,9 +9,11 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft,
   CalendarDays,
+  CalendarPlus,
   Flag,
   Info,
   Minus,
+  Pencil,
   TrendingDown,
   TrendingUp,
   UserRound,
@@ -81,9 +83,15 @@ function SaudeBadge({ saude }: { saude: number }) {
 export function ProjetoDetalhe({
   projeto,
   onBack,
+  podeEditar = false,
+  onEditar,
+  onReportar,
 }: {
   projeto: Projeto;
   onBack: () => void;
+  podeEditar?: boolean;
+  onEditar?: () => void;
+  onReportar?: () => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const rs = useMemo(() => registrosOrdenados(projeto), [projeto]);
@@ -102,9 +110,21 @@ export function ProjetoDetalhe({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" className="-ml-2 mb-2 text-muted-foreground" onClick={onBack}>
-          <ArrowLeft /> Voltar
-        </Button>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" onClick={onBack}>
+            <ArrowLeft /> Voltar
+          </Button>
+          {podeEditar && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onReportar}>
+                <CalendarPlus /> Reportar semana
+              </Button>
+              <Button variant="outline" size="sm" onClick={onEditar}>
+                <Pencil /> Editar
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground">{projeto.codigo}</span>
           <Badge variant={meta.badge}>{meta.label}</Badge>
@@ -117,7 +137,9 @@ export function ProjetoDetalhe({
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <UserRound className="h-3.5 w-3.5" />
-            {projeto.engenheiroNome ?? "Sem engenheiro"}
+            {projeto.engenheiros.length > 0
+              ? projeto.engenheiros.map((e) => e.nome).join(", ")
+              : "Sem engenheiro"}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />

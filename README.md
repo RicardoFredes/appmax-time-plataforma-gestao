@@ -42,8 +42,8 @@ dev:cf` (`wrangler pages dev`).
 2. Copie o `.env`:
 
    ```bash
-   cp .env.example .env
-   # preencha JIRA_EMAIL e JIRA_API_TOKEN
+   cp .env.sample .env
+   # preencha JIRA_EMAIL/JIRA_API_TOKEN e as chaves do Supabase (VITE_SUPABASE_*)
    ```
 
 3. Ajuste `sync/config.json` (quem e quais épicos acompanhar):

@@ -1,4 +1,4 @@
-/** Contrato do controle de projetos (`projetos.json`, editado à mão). */
+/** Contrato do controle de projetos (fonte: Supabase; ver `data.ts`). */
 
 export type ProjetoStatus =
   | "discovery"
@@ -8,6 +8,23 @@ export type ProjetoStatus =
   | "blocked"
   | "paused"
   | "done";
+
+/**
+ * Engenheiro = usuário do sistema (`public.profiles` do backoffice). Identidade
+ * por `id` (uuid do auth.users); nome/avatar só para exibição.
+ */
+export interface Engenheiro {
+  id: string;
+  nome: string;
+  avatarUrl: string | null;
+}
+
+/** Time (`public.teams`). Projetos pertencem a um time; engenheiros são membros dele. */
+export interface Team {
+  id: string;
+  slug: string;
+  nome: string;
+}
 
 /** Um registro semanal de evolução (adicionado toda semana à mão). */
 export interface RegistroSemanal {
@@ -33,10 +50,8 @@ export interface Projeto {
   /** Código curto de exibição (ex.: "P01"). */
   codigo: string;
   nome: string;
-  /** E-mail do engenheiro (casa com sync/config.json) ou `null` se sem dono. */
-  engenheiroEmail: string | null;
-  /** Nome de exibição do engenheiro, ou `null` se sem dono. */
-  engenheiroNome: string | null;
+  /** Engenheiros do projeto (N:N, todos iguais). Vazio = sem dono. */
+  engenheiros: Engenheiro[];
   /** Data de início `YYYY-MM-DD`, ou `null`. */
   inicio: string | null;
   /** Previsão de término `YYYY-MM-DD`, ou `null` se sem data definida. */
@@ -44,6 +59,8 @@ export interface Projeto {
   /** Data de fechamento real `YYYY-MM-DD`, ou `null` enquanto aberto. */
   fechamento: string | null;
   status: ProjetoStatus;
+  /** Time dono do projeto (`teams.id`), ou `null` se sem time. */
+  teamId: string | null;
   /** Importância/prioridade: 1 (mínima) a 5 (máxima). Peso nas métricas gerais. */
   prioridade: number;
   /** Quarter ao qual o projeto pertence, ex.: "2026-Q3". */

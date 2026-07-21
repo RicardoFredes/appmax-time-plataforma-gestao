@@ -13,6 +13,7 @@
  * No-op fora de iframe. Origin validado contra {@link ALLOWED_ANCESTORS}.
  */
 import { ALLOWED_ANCESTORS } from "./embed";
+import { supabase } from "./supabase";
 
 const PANEL_SOURCE = "time-plataforma";
 const BACKOFFICE_SOURCE = "appmax-backoffice";
@@ -85,12 +86,19 @@ export function initRouteSync(): () => void {
   const onLocalChange = () => post("route-change");
 
   const onMessage = (e: MessageEvent) => {
-    if (
-      !isAllowed(e.origin) ||
-      e.data?.source !== BACKOFFICE_SOURCE ||
-      e.data.type !== "navigate"
-    )
+    if (!isAllowed(e.origin) || e.data?.source !== BACKOFFICE_SOURCE) return;
+
+    // Sessão herdada do backoffice: aplica os tokens para o painel escrever no
+    // Supabase (mesmo projeto) como o usuário logado. Leituras não dependem disso.
+    if (e.data.type === "auth" && e.data.access_token && e.data.refresh_token) {
+      void supabase.auth.setSession({
+        access_token: e.data.access_token,
+        refresh_token: e.data.refresh_token,
+      });
       return;
+    }
+
+    if (e.data.type !== "navigate") return;
 
     const nextHash = e.data.path ? `/${e.data.path}` : "";
     const nextSearch: string = e.data.search ?? "";

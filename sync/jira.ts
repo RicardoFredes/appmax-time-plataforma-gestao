@@ -17,7 +17,7 @@ export function credsFromEnv(): JiraCreds {
   if (!baseUrl || !email || !token) {
     throw new Error(
       "Faltam credenciais. Defina JIRA_BASE_URL, JIRA_EMAIL e JIRA_API_TOKEN no .env " +
-        "(veja .env.example).",
+        "(veja .env.sample).",
     );
   }
   return { baseUrl, email, token };

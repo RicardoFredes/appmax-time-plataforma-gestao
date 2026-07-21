@@ -10,16 +10,17 @@ import {
   Check,
   ChevronRight,
   Copy,
-  Database,
   Folder,
   FolderKanban,
   Palmtree,
+  Plus,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -29,15 +30,16 @@ import {
 } from "@/components/ui/select";
 import { initials, firstName } from "@/lib/people";
 import { EXTERNAL_NAV_EVENT } from "@/lib/route-sync";
+import { useSupabaseSession } from "@/lib/useSupabaseSession";
 import { scheduleForAll } from "@/features/sustentacao/schedule";
 import { GROUP_ACCENT } from "@/features/sustentacao/SustentacaoPage";
 import type { SustentacaoData } from "@/features/tasks/types";
-import projetosData from "./projetos.json";
 import { ProjetoDetalhe } from "./ProjetoDetalhe";
-import { ProjetosEditor } from "./ProjetosEditor";
+import { ProjetoFormDialog, RegistroFormDialog } from "./ProjetoForms";
 import { Prioridade } from "./Prioridade";
 import { Velocimetro } from "./Velocimetro";
-import type { Projeto, ProjetosData } from "./types";
+import { useProjetosData } from "./useProjetosData";
+import type { Projeto } from "./types";
 import { parseProjetosState, buildProjetosSearch } from "./url-state";
 import {
   PRIORIDADE_LABEL,
@@ -58,7 +60,12 @@ import {
   ultimoRegistro,
 } from "./derive";
 
-const DATA = projetosData as ProjetosData;
+/** Nomes dos engenheiros do projeto, unidos (ou "Sem engenheiro"). */
+function nomesEngenheiros(p: Projeto): string {
+  return p.engenheiros.length > 0
+    ? p.engenheiros.map((e) => e.nome).join(", ")
+    : "Sem engenheiro";
+}
 
 /**
  * Sub-rota da aba: id do projeto aberto (via hash `#/projetos/<id>`), ou `null`
@@ -119,7 +126,10 @@ function SaudeDot({ saude }: { saude: number | null }) {
   );
 }
 
-function Avatar({ nome }: { nome: string | null }) {
+function Avatar({ nome, avatarUrl }: { nome: string | null; avatarUrl?: string | null }) {
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+  }
   return (
     <div
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
@@ -204,7 +214,7 @@ function ProjetoRow({
             showEngenheiro && (
               <>
                 <UserRound className="h-3.5 w-3.5 shrink-0" />
-                {projeto.engenheiroNome ?? "Sem engenheiro"}
+                {nomesEngenheiros(projeto)}
               </>
             )
           }
@@ -348,7 +358,7 @@ function montarSecoes(
         projetos: ordenarProjetos(g.projetos),
         header: (
           <div className="mb-2 flex items-center gap-3">
-            <Avatar nome={g.email ? g.nome : null} />
+            <Avatar nome={g.temDono ? g.nome : null} avatarUrl={g.avatarUrl} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="font-semibold tracking-tight">{g.nome}</h2>
@@ -445,7 +455,7 @@ function buildReport(
       const nota = u?.nota?.trim() || p.descricao || "—";
       const sa = saudeAtual(p);
       const onTrack = sa !== null ? ` · ${saudeMeta(sa).label} (${saudeMeta(sa).nivel}/5)` : "";
-      const resp = p.engenheiroNome ?? "Sem engenheiro";
+      const resp = nomesEngenheiros(p);
       L.push(
         `  - [${p.codigo}] ${p.nome} (${resp}) — ${progressoAtual(p)}% · ${STATUS_META[p.status].label}${onTrack}: ${nota}`,
       );
@@ -765,21 +775,32 @@ function MiniStat({
 
 export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData }) {
   const [id, navigate] = useProjetoRoute();
+  const { state, refetch } = useProjetosData();
+  const session = useSupabaseSession();
+  const podeEditar = session !== null;
+
+  // Dados carregados (vazio enquanto carrega — mantém a ordem dos hooks estável).
+  const projetosAll = state.status === "ready" ? state.data.projetos : [];
+
+  // Dialogs de CRUD.
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [editar, setEditar] = useState<Projeto | null>(null);
+  const [reportar, setReportar] = useState<Projeto | null>(null);
 
   // Quarter atual pelo relógio do cliente; a visão principal começa nele.
   const quarterAtual = useMemo(() => quarterDe(new Date()), []);
-  const quarters = useMemo(
-    () => quartersDisponiveis(DATA.projetos, quarterAtual),
-    [quarterAtual],
-  );
 
   // Filtros no query string (padrão do projeto — ver ./url-state.ts). Estado
-  // inicial vindo da URL; `quarter` inválido/ausente cai no atual.
+  // inicial vindo da URL; `quarter` ausente cai no atual.
   const initial = useMemo(() => parseProjetosState(window.location.search), []);
-  const [quarter, setQuarter] = useState(() =>
-    initial.quarter && quarters.includes(initial.quarter) ? initial.quarter : quarterAtual,
-  );
+  const [quarter, setQuarter] = useState(() => initial.quarter ?? quarterAtual);
   const [dim, setDim] = useState<Dimensao>(initial.dim);
+
+  const quarters = useMemo(() => {
+    const qs = quartersDisponiveis(projetosAll, quarterAtual);
+    return qs.includes(quarter) ? qs : [quarter, ...qs].sort((a, b) => b.localeCompare(a));
+  }, [projetosAll, quarterAtual, quarter]);
+
 
   // Reflete os filtros na URL (replaceState — não polui o histórico).
   useEffect(() => {
@@ -804,8 +825,8 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
   }, [quarters, quarterAtual]);
 
   const projetos = useMemo(
-    () => DATA.projetos.filter((p) => p.quarter === quarter),
-    [quarter],
+    () => projetosAll.filter((p) => p.quarter === quarter),
+    [projetosAll, quarter],
   );
 
   const stats = useMemo(() => {
@@ -825,21 +846,65 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
     };
   }, [projetos]);
 
-  // Editor visual (rascunho em localStorage) — rota `#/projetos/editor`.
-  if (id === "editor") {
-    return <ProjetosEditor onBack={() => navigate(null)} />;
+  // Estados de carregamento/erro do Supabase.
+  if (state.status === "loading") return <ProjetosSkeleton />;
+  if (state.status === "error") {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-destructive">Erro ao carregar projetos: {state.error}</p>
+        <Button variant="outline" size="sm" onClick={refetch}>
+          Tentar de novo
+        </Button>
+      </div>
+    );
   }
 
   // Detalhe de um projeto (busca em todos os quarters, não só no selecionado).
   // A rota usa o código (ex.: PRJ-3); aceita o slug antigo como fallback.
+  const projetoAberto = id
+    ? projetosAll.find((p) => p.codigo === id) ?? projetosAll.find((p) => p.id === id) ?? null
+    : null;
+
+  // Dialogs de CRUD, montados uma vez (acessíveis do detalhe e da lista).
+  const dialogs = (
+    <>
+      <ProjetoFormDialog
+        open={novoOpen}
+        onOpenChange={setNovoOpen}
+        projeto={null}
+        quarterAtual={quarterAtual}
+        onSaved={refetch}
+      />
+      {editar && (
+        <ProjetoFormDialog
+          open
+          onOpenChange={(v) => !v && setEditar(null)}
+          projeto={editar}
+          quarterAtual={quarterAtual}
+          onSaved={refetch}
+        />
+      )}
+      {reportar && (
+        <RegistroFormDialog
+          open
+          onOpenChange={(v) => !v && setReportar(null)}
+          projeto={reportar}
+          onSaved={refetch}
+        />
+      )}
+    </>
+  );
+
   if (id) {
-    const projeto =
-      DATA.projetos.find((p) => p.codigo === id) ??
-      DATA.projetos.find((p) => p.id === id);
-    if (projeto) {
-      return <ProjetoDetalhe projeto={projeto} onBack={() => navigate(null)} />;
-    }
-    return (
+    const content = projetoAberto ? (
+      <ProjetoDetalhe
+        projeto={projetoAberto}
+        onBack={() => navigate(null)}
+        podeEditar={podeEditar}
+        onEditar={() => setEditar(projetoAberto)}
+        onReportar={() => setReportar(projetoAberto)}
+      />
+    ) : (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Projeto <code>{id}</code> não encontrado.
@@ -849,82 +914,97 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
         </Button>
       </div>
     );
-  }
-
-  if (DATA.projetos.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Nenhum projeto cadastrado. Edite{" "}
-        <code>src/features/projetos/projetos.json</code>.
-      </p>
+      <>
+        {content}
+        {dialogs}
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">Controle de Projetos</h1>
-          <div className="flex items-center gap-2">
-            <Select value={quarter} onValueChange={setQuarter}>
-              <SelectTrigger className="h-9 w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {quarters.map((q) => (
-                  <SelectItem key={q} value={q}>
-                    {quarterLabel(q)}
-                    {q === quarterAtual ? " · atual" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => navigate("editor")}
-              title="Editor de projetos (reportar / editar) — recurso de dev"
-              aria-label="Abrir editor de projetos"
-            >
-              <Database className="h-4 w-4" />
-            </Button>
+    <>
+      <div className="space-y-6">
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Controle de Projetos</h1>
+            <div className="flex items-center gap-2">
+              <Select value={quarter} onValueChange={setQuarter}>
+                <SelectTrigger className="h-9 w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {quarters.map((q) => (
+                    <SelectItem key={q} value={q}>
+                      {quarterLabel(q)}
+                      {q === quarterAtual ? " · atual" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {podeEditar && (
+                <Button size="sm" onClick={() => setNovoOpen(true)}>
+                  <Plus /> Novo projeto
+                </Button>
+              )}
+            </div>
           </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Evolução semanal dos projetos.
+          </p>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Evolução semanal dos projetos · de <code>projetos.json</code>.
-        </p>
+
+        {projetosAll.length === 0 ? (
+          <Card className="p-8 text-center text-sm text-muted-foreground">
+            Nenhum projeto cadastrado ainda.
+            {podeEditar && " Use “Novo projeto” para começar."}
+          </Card>
+        ) : projetos.length === 0 ? (
+          <Card className="p-8 text-center text-sm text-muted-foreground">
+            Nenhum projeto em {quarterLabel(quarter)}.
+          </Card>
+        ) : (
+          <Relatorio
+            projetos={projetos}
+            stats={stats}
+            sustentacao={sustentacao}
+            dim={dim}
+            onDimChange={setDim}
+            onOpen={(pid) => navigate(pid)}
+          />
+        )}
+
+        <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <p className="leading-relaxed">
+            Clique em um projeto para ver o histórico e{" "}
+            {podeEditar ? "reportar a semana / editar" : "acompanhar a evolução"}.
+            {!podeEditar && " (Edição disponível dentro do backoffice.)"}
+          </p>
+        </div>
       </div>
+      {dialogs}
+    </>
+  );
+}
 
-      {projetos.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          Nenhum projeto em {quarterLabel(quarter)}.
-        </Card>
-      ) : (
-        <Relatorio
-          projetos={projetos}
-          stats={stats}
-          sustentacao={sustentacao}
-          dim={dim}
-          onDimChange={setDim}
-          onOpen={(pid) => navigate(pid)}
-        />
-      )}
-
-      <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-        <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        <p className="leading-relaxed">
-          Clique em um projeto para ver o histórico. Para atualizar, use o{" "}
-          <button
-            type="button"
-            onClick={() => navigate("editor")}
-            className="text-primary underline underline-offset-2"
-          >
-            editor
-          </button>{" "}
-          (ou o CLI <code>pnpm projetos</code>), copie o JSON e cole em{" "}
-          <code>src/features/projetos/projetos.json</code>, depois faça o deploy.
-        </p>
+/** Esqueleto enquanto os projetos carregam do Supabase. */
+function ProjetosSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-9 w-40" />
+      </div>
+      <div className="grid gap-2 sm:grid-cols-8">
+        <Skeleton className="h-40 sm:col-span-2" />
+        <Skeleton className="h-40 sm:col-span-2" />
+        <Skeleton className="h-40 sm:col-span-4" />
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full" />
+        ))}
       </div>
     </div>
   );

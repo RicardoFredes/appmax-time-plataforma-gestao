@@ -16,8 +16,8 @@ React 18 + Vite 5 + TS · Tailwind **v4** (`@tailwindcss/vite`, tema em
 ## Comandos
 `pnpm dev` · `pnpm build` · `pnpm typecheck` · `pnpm sync` (Jira→JSON, precisa `.env`) ·
 `pnpm sync:export` (sem rede: reaplica o overlay de urgência **e** reconstrói a escala
-de sustentação a partir de `config.json`/`vacations.json`) · `pnpm projetos` (CLI
-interativo que registra o progresso semanal em `projetos.json`) · `pnpm run deploy`.
+de sustentação a partir de `config.json`/`vacations.json`) · `pnpm seed:projetos` (seed
+one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm run deploy`.
 
 ## Mapa
 - `sync/` — pipeline de dados. `config.json` (time + épicos + bloco `sustentacao`),
@@ -33,16 +33,18 @@ interativo que registra o progresso semanal em `projetos.json`) · `pnpm run dep
   puro do rodízio + cobertura de férias; a semana corrente vem do relógio do cliente).
 - `src/features/ferias/` — `FeriasPage` (linha do tempo + lista das ausências por status,
   lê `data.sustentacao.ferias`). Helpers de nome/avatar em `src/lib/people.ts`.
-- `src/features/projetos/` — controle semanal de projetos. `projetos.json` (dados **editados
-  à mão**, bundlados no build — não vem do Jira), `types.ts`, `derive.ts` (progresso/saúde
-  atual, tendência, agrupamento por engenheiro, ordenação, `SAUDE_META`), `ProjetosPage`
-  (lista 1-por-linha + 3 visões: Por projeto, Por engenheiro, Relatório da semana),
-  `ProjetoDetalhe` (2 colunas: card progresso+on-tracking e gráfico à esquerda, histórico
-  em altura total à direita), `EvolucaoChart` (SVG, linha do progresso; pontos coloridos
-  pela saúde), `Velocimetro` (SVG, medidor semicircular do on-tracking 1–5). Há um projeto
-  fake `EX1` (id `exemplo-demonstracao`) só para demonstrar a tela preenchida — remova quando quiser.
-  `ProjetosEditor` (editor visual `#/projetos/editor`, rascunho em localStorage, gera o JSON para colar)
-  e `serialize.ts` (formata `ProjetosData` no estilo do arquivo, usado pelo editor).
+- `src/features/projetos/` — controle semanal de projetos, **dinâmico no Supabase** (não
+  vem do Jira; ver Convenções → Projetos). `types.ts` (`Projeto` tem `engenheiros: Engenheiro[]`,
+  N:N), `data.ts` (queries/mutations Supabase + `fetchProjetos` remonta o `ProjetosData`),
+  `useProjetosData.ts` (fetch + loading/erro + **realtime**), `derive.ts` (progresso/saúde
+  atual, tendência, agrupamento por engenheiro com **fan-out N:N**, ordenação, `SAUDE_META`),
+  `ProjetosPage` (lista 1-por-linha + relatório; select de agrupamento), `ProjetoDetalhe`
+  (2 colunas: card progresso+on-tracking e gráfico à esquerda, histórico em altura total à
+  direita; botões Reportar/Editar quando há sessão), `ProjetoForms.tsx`
+  (`ProjetoFormDialog`/`RegistroFormDialog` — CRUD por projeto direto no banco),
+  `EvolucaoChart` (SVG, linha do progresso; pontos coloridos pela saúde), `Velocimetro`
+  (SVG, medidor semicircular do on-tracking 1–5). `projetos.json` permanece **só como fonte
+  do seed** (`pnpm seed:projetos`), não é mais importado pela app.
 - `src/components/ui/` — shadcn copiado do backoffice. `src/App.tsx` — nav por hash
   (`#/projetos`, `#/sustentacao`, `#/ferias`) entre as abas Tarefas/Projetos/Sustentação/Férias;
   header da aba Tarefas.
@@ -77,29 +79,35 @@ interativo que registra o progresso semanal em `projetos.json`) · `pnpm run dep
   que **redireciona** uso top-level para `BACKOFFICE_PANEL_URL`; desligada em dev). A
   allowlist de origins vive nos **dois** (header + embed.ts) em sincronia. Isso protege a
   UI, **não** o `/api/tasks` (JSON ainda acessível direto). Ver [deploy.md](docs/deploy.md).
-- **Projetos**: `src/features/projetos/projetos.json` é a fonte, editada à mão e **importada
-  em build-time** (não passa pelo `sync`/Jira/KV). Atualização semanal = adicionar um objeto
-  `{ semana, progresso (0–100 acumulado), saude (1 em perigo … 5 on tracking), nota }` em
-  `registros` do projeto e fazer o deploy. Um registro pode ter `marco`
-  (`"inicio"` | `"fim"` | `"info"`) — **sem saúde/on-tracking** (a `saude` é ignorada por
-  `saudeAtual`/`tendencia` e nos deltas): `inicio`/`fim` demarcam começo/término do projeto
-  (**ícone de bandeira**), `info` é uma atualização puramente informativa (**ícone de info**,
-  círculo vazado no gráfico). Os registros de início (progresso 0 na data `inicio`) já existem
-  para os projetos com `inicio`. Duas formas de editar sem mexer no JSON à mão
-  (mão continua válido): **(a) editor no frontend** — rota `#/projetos/editor` (botão
-  "Reportar / editar" na página), `ProjetosEditor.tsx`: mantém um **rascunho em localStorage**
-  (`projetos:editor:draft:v1`, seed do JSON bundlado), preenche progresso/saúde/nota da semana
-  por projeto, edita metadados, adiciona/remove projetos, e ao final **Copiar JSON**/baixar
-  para colar em `projetos.json` + deploy; **(b) CLI** `pnpm projetos` (`sync/projetos.ts`,
-  `readline` nativo, sem deps) para editar direto no arquivo. Ambos usam a `semana` da
-  segunda-feira corrente (edita no lugar se já existir) e preservam o `$doc` e o estilo do
-  arquivo (registros em linha única) — via `serialize.ts` no front e uma cópia da mesma
-  lógica no CLI (o projeto `sync` do tsconfig não importa de `src`). Progresso/saúde/nota "atuais" = os do último
-  registro (por `semana`). Cada projeto tem `id` (slug da URL de detalhe `#/projetos/<id>`),
-  `codigo` (ID estilo Jira, ex.: "PRJ-3"), `prioridade` (1–5, peso das métricas) e `quarter`
-  (ex.: "2026-Q3"). Fica em `src/` (não em `sync/`) por causa do `composite`+`include:["src"]`
-  do tsconfig, que exige o JSON dentro da árvore type-checada. Rota de detalhe é sub-hash lida
-  na própria `ProjetosPage`; `App.tsx` casa a página pelo **primeiro segmento** do hash.
+- **Projetos**: fonte é o **Supabase** (projeto `hckrainomxsawfzmjufb`, o **mesmo do
+  backoffice**), lido no cliente via `supabase-js` (`src/lib/supabase.ts`) — **não** passa
+  por `sync`/Jira/KV/JSON bundlado. **Banco em inglês** (mapeado PT↔EN em `data.ts`); esquema
+  em `supabase/migrations/20260721_projects.sql`. Tabelas: `teams`, `team_members`,
+  `projects`, `project_engineers` (N:N), `weekly_reports`. **Engenheiro = usuário do sistema**
+  (`public.profiles` do backoffice, uuid + nome + avatar); projetos pertencem a um **time**
+  (`projects.team_id`) e seus engenheiros são um **subconjunto dos membros do time**
+  (`project_engineers`). `data.ts` remonta o `ProjetosData` e `useProjetosData.ts` faz o fetch
+  com **realtime** (muda tabela → refaz a lista; também refaz em `SIGNED_IN`). Na visão "por
+  engenheiro" o projeto aparece sob cada engenheiro (`derive.porEngenheiro` faz fan-out).
+  Registro semanal = `{ semana, progresso (0–100 acumulado), saude (1…5), nota, marco? }`;
+  PK `(project, week)` aplica "1 por semana" (edit-in-place). `marco`
+  (`inicio`/`fim`/`info`, no banco `milestone` `start`/`end`/`info`) **ignora saúde**:
+  `inicio`/`fim` = bandeira, `info` = ícone de info (círculo vazado no gráfico).
+  Progresso/saúde/nota "atuais" = último registro. Cada projeto tem `id` (slug da URL
+  `#/projetos/<id>`), `codigo` ("PRJ-3"), `prioridade` (1–5) e `quarter` ("2026-Q3").
+  - **Acesso**: **leitura e escrita exigem sessão** (RLS `authenticated`, como o resto do
+    backoffice — `profiles` é authenticated-only). A sessão é **herdada do backoffice** via
+    `postMessage` `type:"auth"` (→ `route-sync.ts` faz `setSession`; o backoffice envia em
+    `appmax-backoffice-frontend/src/features/time-plataforma/page.tsx`). Em `pnpm dev`
+    standalone há um **login de dev** (`src/lib/dev-auth.ts`, `VITE_DEV_EMAIL/PASSWORD`,
+    chamado em `main.tsx`). Sem sessão a lista vem vazia e os botões de escrita somem.
+  - **Edição** = CRUD por projeto direto no banco (`ProjetoForms.tsx`): **Novo projeto** na
+    lista; **Reportar semana** / **Editar** / apagar no detalhe. O picker de engenheiros lista
+    os **membros do time** do projeto. Migração inicial: `pnpm seed:projetos`
+    (`sync/seed-projetos.ts`, lê o `projetos.json` e mapeia e-mail→uuid via service_role). O
+    antigo editor-que-gera-JSON, o `serialize.ts` e a CLI `pnpm projetos` foram **removidos**.
+  - Rota de detalhe é sub-hash lida na própria `ProjetosPage`; `App.tsx` casa a página pelo
+    **primeiro segmento** do hash.
   A visão principal filtra pelo **quarter atual** (relógio do cliente, `quarterDe`); quarters
   passados ficam no seletor (histórico preservado). A página tem **uma única visão** (o
   relatório, para a direção) — **sem abas**; um select "Visualizar por" (ao lado de "Copiar

@@ -1,112 +1,118 @@
-# Modelagem relacional dos Projetos (proposta)
+# Modelagem relacional dos Projetos
 
-> **Estado atual:** os projetos **não** estão em banco. A fonte é
-> `src/features/projetos/projetos.json`, editada à mão e bundlada no build (ver
-> [frontend.md](frontend.md) e o bloco *Projetos* do `CLAUDE.md`). Este documento é o
-> esquema **proposto** para migrar esses dados a um banco relacional, caso o controle
-> saia do JSON. As tabelas espelham 1:1 o contrato de `src/features/projetos/types.ts`.
+> **Estado atual:** **implementado** no Supabase (projeto `hckrainomxsawfzmjufb`, o mesmo
+> do backoffice). O SQL vive em `supabase/migrations/20260721_projects.sql`; o cliente lê
+> via `src/features/projetos/data.ts` (ver [frontend.md](frontend.md) e o bloco *Projetos*
+> do `CLAUDE.md`). O `projetos.json` ficou só como fonte do seed (`pnpm seed:projetos`).
+>
+> **Engenheiro = usuário do sistema.** Não há tabela própria de engenheiros: eles são os
+> usuários do backoffice (`public.profiles`, uuid + `name` + `avatar_url`). Projetos
+> pertencem a um **time** e seus engenheiros são um **subconjunto dos membros do time**.
+>
+> **Banco em inglês** (padrão do backoffice); os tipos do app são em português — a tradução
+> PT↔EN vive só em `data.ts`. Tudo exige **sessão** (RLS `authenticated`; `profiles` é
+> authenticated-only).
 
 ## Visão geral
 
 ```
-engenheiros ──1:N──> projetos ──1:N──> registros_semanais
-                        │
-                        └── status, prioridade, quarter
+teams ──1:N──> team_members ─→ profiles(user)
+  │
+  └──1:N──> projects ──1:N──> weekly_reports
+               └── project_engineers ─→ profiles(user)   (N:N, subconjunto do time)
 ```
 
-Duas entidades e uma tabela de histórico:
-
-- **`engenheiros`** — o par `engenheiroEmail`/`engenheiroNome` se repete entre projetos;
-  vira tabela própria com o e-mail como identidade (o mesmo critério do resto do painel:
-  *time casado por e-mail*).
-- **`projetos`** — os campos de topo de cada `Projeto`.
-- **`registros_semanais`** — o array `registros[]` embutido, virado filhos 1:N. O
-  progresso/saúde/nota "atuais" são o registro de maior `semana`.
+- **`teams`** — times (ex.: "Time Plataforma"). `slug` estável para seed/config.
+- **`team_members`** — junção time ↔ usuário (`profiles`).
+- **`projects`** — campos de topo de cada `Projeto` (+ `team_id`).
+- **`project_engineers`** — junção N:N projeto ↔ usuário; os engenheiros do projeto
+  (subconjunto dos membros do time). Sem linhas = projeto sem dono.
+- **`weekly_reports`** — o array `registros[]` embutido, virado filhos 1:N (inclui
+  `milestone`). O progresso/saúde/nota "atuais" são o registro de maior `week`.
 
 ## Tabelas
 
-### `engenheiros`
+> **Referências a `public.profiles`** (tabela do backoffice: `id uuid`, `name`,
+> `avatar_url`, mantida por trigger a partir de `auth.users`). Mapa PT↔EN em `data.ts`:
+> `Projeto.engenheiros[]` ← `project_engineers → profiles`; `Team` ← `teams`;
+> `RegistroSemanal.marco` (`inicio`/`fim`/`info`) ↔ `weekly_reports.milestone`
+> (`start`/`end`/`info`).
 
 ```sql
-CREATE TABLE engenheiros (
-  email  TEXT PRIMARY KEY,         -- identidade (casa com sync/config.json)
-  nome   TEXT NOT NULL             -- só exibição
+CREATE TABLE teams (
+  id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT NOT NULL UNIQUE,          -- "plataforma"
+  name TEXT NOT NULL
+);
+
+CREATE TABLE team_members (
+  team_id UUID NOT NULL REFERENCES teams(id)    ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  PRIMARY KEY (team_id, user_id)
+);
+
+CREATE TABLE projects (
+  id           TEXT PRIMARY KEY,      -- slug da URL de detalhe (#/projetos/<id>)
+  code         TEXT NOT NULL UNIQUE,  -- ID estilo Jira ("PRJ-1")
+  name         TEXT NOT NULL,
+  description  TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL CHECK (status IN ('discovery','refinement','in_progress',
+                                               'testing','blocked','paused','done')),
+  priority     SMALLINT NOT NULL CHECK (priority BETWEEN 1 AND 5),
+  quarter      TEXT NOT NULL,         -- "2026-Q3"
+  team_id      UUID REFERENCES teams(id),
+  start_date   DATE, due_date DATE, closed_date DATE
+);
+
+-- Engenheiros do projeto: subconjunto dos membros do time (N:N com profiles).
+CREATE TABLE project_engineers (
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  PRIMARY KEY (project_id, user_id)
+);
+
+CREATE TABLE weekly_reports (
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  week       DATE NOT NULL,           -- segunda-feira da semana
+  progress   SMALLINT NOT NULL CHECK (progress BETWEEN 0 AND 100),
+  health     SMALLINT NOT NULL CHECK (health BETWEEN 1 AND 5),
+  note       TEXT NOT NULL DEFAULT '',
+  milestone  TEXT CHECK (milestone IN ('start','end','info')),  -- nullable; ignora health
+  PRIMARY KEY (project_id, week)      -- 1 registro por projeto/semana
 );
 ```
-
-### `projetos`
-
-```sql
-CREATE TABLE projetos (
-  id          TEXT PRIMARY KEY,     -- slug da URL de detalhe (#/projetos/<id>)
-  codigo      TEXT NOT NULL UNIQUE, -- ID estilo Jira ("PRJ-1")
-  nome        TEXT NOT NULL,
-  descricao   TEXT NOT NULL DEFAULT '',
-  status      TEXT NOT NULL
-              CHECK (status IN ('discovery','refinement','in_progress',
-                                'testing','blocked','paused','done')),
-  prioridade  SMALLINT NOT NULL CHECK (prioridade BETWEEN 1 AND 5), -- peso nas métricas
-  quarter     TEXT NOT NULL,        -- "2026-Q3"
-  engenheiro_email TEXT REFERENCES engenheiros(email), -- NULL = sem dono
-  inicio      DATE,                 -- previsão/data de início    (nullable)
-  prazo       DATE,                 -- previsão de término        (nullable)
-  fechamento  DATE                  -- fechamento real; NULL enquanto aberto
-);
-```
-
-- `engenheiro_email` **nullable** com FK cobre o "projeto sem dono" (`null` no JSON),
-  sem linha fantasma.
-- `status` e `prioridade` como `CHECK` inline — enums fechados e pequenos.
-
-### `registros_semanais`
-
-```sql
-CREATE TABLE registros_semanais (
-  projeto_id TEXT NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
-  semana     DATE NOT NULL,         -- segunda-feira da semana
-  progresso  SMALLINT NOT NULL CHECK (progresso BETWEEN 0 AND 100), -- acumulado
-  saude      SMALLINT NOT NULL CHECK (saude BETWEEN 1 AND 5),       -- 1 perigo … 5 on tracking
-  nota       TEXT NOT NULL DEFAULT '',
-  PRIMARY KEY (projeto_id, semana)  -- no máx. 1 registro por projeto/semana
-);
-```
-
-A PK composta `(projeto_id, semana)` aplica no banco o invariante que hoje é só
-convenção: um registro por semana por projeto.
 
 ## Consultas típicas
 
 Estado "atual" de cada projeto (o último registro, o que a UI mostra na lista):
 
 ```sql
-SELECT DISTINCT ON (projeto_id) *
-FROM registros_semanais
-ORDER BY projeto_id, semana DESC;
+SELECT DISTINCT ON (project_id) *
+FROM weekly_reports
+ORDER BY project_id, week DESC;
 ```
 
 Projetos do quarter corrente (a visão principal filtra pelo quarter do relógio):
 
 ```sql
-SELECT * FROM projetos WHERE quarter = '2026-Q3';
+SELECT * FROM projects WHERE quarter = '2026-Q3';
 ```
 
 ## Decisões de modelagem
 
 | Ponto | Escolha | Por quê |
 |---|---|---|
-| Engenheiro | tabela por e-mail, FK nullable | dedup + integridade; `null` = sem dono |
-| `status`/`prioridade`/`saude` | `CHECK` inline | enums fechados e pequenos |
-| `registros` | tabela filha, PK `(projeto,semana)` | 1:N natural; PK aplica "1 por semana" |
-| `quarter` | coluna `TEXT` (denormalizada) | filtro barato; igual ao JSON de hoje |
-| Datas | `DATE` nullable | `inicio`/`prazo`/`fechamento` já são opcionais |
+| Engenheiro | usuário do sistema (`profiles`), sem tabela própria | engenheiro **é** um user; ganha nome+avatar; sem duplicação |
+| Time | `teams` + `team_members`; `projects.team_id` | escopa o picker; agrupa projetos; reaproveitável |
+| Eng. do projeto | `project_engineers` (N:N, subconjunto do time) | vários por projeto; pessoas diferentes por projeto |
+| Acesso | RLS `authenticated` (leitura e escrita) | `profiles` é authenticated-only; mesma postura do backoffice |
+| `status`/`priority`/`health` | `CHECK` inline | enums fechados e pequenos |
+| `weekly_reports` | tabela filha, PK `(project,week)` | 1:N natural; PK aplica "1 por semana" |
+| Datas | `DATE` nullable | `start_date`/`due_date`/`closed_date` já são opcionais |
 
 ## Se crescer
 
-- **Lookups** para `status`/`prioridade`/`saude` (`codigo`, `rotulo`, `ordem`, `peso`) se
-  quiser a ordem lógica e o peso das métricas — hoje em `src/features/projetos/derive.ts`
-  (`SAUDE_META`, ordenação) — vivendo no banco em vez do código.
-- **`quarters`** como tabela (`codigo`, `inicio`, `fim`) para validar/ordenar quarters no
-  banco em vez de derivar do relógio.
-- **`projetos_historico`** para auditar mudanças dos campos do próprio projeto (troca de
-  prazo, de dono). Hoje o histórico semanal *é* `registros_semanais`; ele não rastreia
-  edição de metadados do projeto.
+- **Papel do engenheiro** no projeto (lead/colab) → coluna `role` em `project_engineers`.
+- **`quarters`** como tabela (`code`, `start`, `end`) para validar/ordenar no banco.
+- **`projects_history`** para auditar mudanças de metadados do projeto (troca de prazo,
+  de time). Hoje o histórico semanal *é* `weekly_reports`; não rastreia edição de metadados.

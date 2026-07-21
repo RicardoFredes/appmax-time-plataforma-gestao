@@ -127,32 +127,44 @@ export function tendencia(p: Projeto): number | null {
 }
 
 export interface GrupoEngenheiro {
-  /** Chave de agrupamento: e-mail, ou "sem-dono". */
+  /** Chave de agrupamento: id do engenheiro (uuid), ou "sem-dono". */
   key: string;
   nome: string;
-  email: string | null;
+  /** `null` no grupo "sem dono". */
+  avatarUrl: string | null;
+  temDono: boolean;
   projetos: Projeto[];
   /** Média do progresso atual dos projetos do engenheiro. */
   progressoMedio: number;
 }
 
-/** Agrupa projetos por engenheiro (sem dono vai para o fim). */
+/**
+ * Agrupa projetos por engenheiro (sem dono vai para o fim). Como um projeto pode
+ * ter vários engenheiros (N:N), ele aparece em **cada** grupo dos seus engenheiros;
+ * projeto sem engenheiro cai no grupo "sem-dono".
+ */
 export function porEngenheiro(projetos: Projeto[]): GrupoEngenheiro[] {
   const mapa = new Map<string, GrupoEngenheiro>();
-  for (const p of projetos) {
-    const key = p.engenheiroEmail ?? "sem-dono";
+  const push = (
+    key: string,
+    nome: string,
+    avatarUrl: string | null,
+    temDono: boolean,
+    p: Projeto,
+  ) => {
     let g = mapa.get(key);
     if (!g) {
-      g = {
-        key,
-        nome: p.engenheiroNome ?? "Sem engenheiro",
-        email: p.engenheiroEmail,
-        projetos: [],
-        progressoMedio: 0,
-      };
+      g = { key, nome, avatarUrl, temDono, projetos: [], progressoMedio: 0 };
       mapa.set(key, g);
     }
     g.projetos.push(p);
+  };
+  for (const p of projetos) {
+    if (p.engenheiros.length === 0) {
+      push("sem-dono", "Sem engenheiro", null, false, p);
+    } else {
+      for (const e of p.engenheiros) push(e.id, e.nome, e.avatarUrl, true, p);
+    }
   }
   const grupos = [...mapa.values()];
   for (const g of grupos) {
@@ -162,7 +174,7 @@ export function porEngenheiro(projetos: Projeto[]): GrupoEngenheiro[] {
   }
   // Com dono primeiro (por nome), "sem dono" por último.
   return grupos.sort((a, b) => {
-    if ((a.email === null) !== (b.email === null)) return a.email === null ? 1 : -1;
+    if (a.temDono !== b.temDono) return a.temDono ? -1 : 1;
     return a.nome.localeCompare(b.nome, "pt-BR");
   });
 }
