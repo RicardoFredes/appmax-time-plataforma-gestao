@@ -60,6 +60,19 @@ function clone<T>(v: T): T {
     : (JSON.parse(JSON.stringify(v)) as T);
 }
 
+/**
+ * Normaliza um rascunho carregado do localStorage. Rascunhos salvos antes da
+ * migração "status em inglês" carregam `status` que não existe mais em
+ * `STATUS_META` — coage para um valor válido para não quebrar a renderização.
+ */
+function sanitizeDraft(data: ProjetosData): ProjetosData {
+  const projetos = (data.projetos ?? []).map((p) => ({
+    ...p,
+    status: STATUS_META[p.status] ? p.status : ("in_progress" as ProjetoStatus),
+  }));
+  return { projetos };
+}
+
 function ultimo(p: Projeto): RegistroSemanal | undefined {
   return [...p.registros].sort((a, b) => a.semana.localeCompare(b.semana)).pop();
 }
@@ -89,7 +102,7 @@ function useDraft() {
   const [draft, setDraft] = useState<ProjetosData>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as ProjetosData;
+      if (raw) return sanitizeDraft(JSON.parse(raw) as ProjetosData);
     } catch {
       /* ignora rascunho corrompido */
     }
