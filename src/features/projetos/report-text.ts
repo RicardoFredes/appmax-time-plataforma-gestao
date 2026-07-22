@@ -26,6 +26,11 @@ function noteCell(p: Project): string {
   return cell(note);
 }
 
+function lastReportDateCell(p: Project): string {
+  const date = lastReport(p)?.date;
+  return date ? format(parseISO(date), "dd/MM/yyyy", { locale: ptBR }) : "—";
+}
+
 export function buildReportText(
   sections: Section[],
   duty: DutyItem[],
@@ -70,14 +75,20 @@ export function buildReportText(
     const headers = ["Projeto"];
     if (showEngineer) headers.push("Engenheiro");
     if (showImportance) headers.push("Prioridade");
-    headers.push("%", "Status", "Saúde", "Observação");
+    headers.push("%", "Status", "Saúde", "Último reporte", "Observação");
 
     L.push(`### ${s.text}`, "", `| ${headers.join(" | ")} |`, `|${headers.map(() => "---").join("|")}|`);
     for (const p of s.projects) {
       const row = [`[${p.code}] ${cell(p.name)}`];
       if (showEngineer) row.push(cell(engineerNames(p)));
       if (showImportance) row.push(priorityMeta(p.priority).label);
-      row.push(`${currentProgress(p)}%`, STATUS_META[p.status].label, healthCell(p), noteCell(p));
+      row.push(
+        `${currentProgress(p)}%`,
+        STATUS_META[p.status].label,
+        healthCell(p),
+        lastReportDateCell(p),
+        noteCell(p),
+      );
       L.push(`| ${row.join(" | ")} |`);
     }
     L.push("");
