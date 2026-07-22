@@ -2,6 +2,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { notifyModalOpen } from "@/lib/route-sync";
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -12,6 +13,9 @@ const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(function DialogOverlay({ className, ...props }, ref) {
+  // Monta junto com o modal e desmonta ao fechar → avisa o backoffice para
+  // expandir o iframe a tela cheia (backdrop cobre a página toda no embed).
+  React.useEffect(() => notifyModalOpen(), []);
   return (
     <DialogPrimitive.Overlay
       ref={ref}

@@ -72,6 +72,31 @@ function patchHistory() {
   }
 }
 
+/**
+ * Avisa o backoffice que um modal abriu/fechou, para ele expandir o iframe a
+ * tela cheia enquanto o modal está aberto — assim o backdrop (`fixed inset-0`,
+ * relativo ao iframe) cobre a página toda em vez de só a área embutida. Usa
+ * contagem de referência para lidar com modais aninhados/simultâneos. No-op
+ * fora de iframe. Retorna a função de fechamento (chamar no unmount do overlay).
+ */
+let openModals = 0;
+function postModal(open: boolean) {
+  if (window.parent === window) return;
+  window.parent.postMessage(
+    { source: PANEL_SOURCE, type: "modal", open },
+    parentOrigin(),
+  );
+}
+export function notifyModalOpen(): () => void {
+  if (++openModals === 1) postModal(true);
+  return () => {
+    if (--openModals <= 0) {
+      openModals = 0;
+      postModal(false);
+    }
+  };
+}
+
 export function initRouteSync(): () => void {
   if (window.parent === window) return () => {};
   patchHistory();
