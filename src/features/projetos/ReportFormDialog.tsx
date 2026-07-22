@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -117,7 +118,7 @@ export function ReportFormDialog({
 
         <div className="space-y-4">
           <Field label="Data">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DatePicker value={date} onChange={setDate} />
           </Field>
 
           <Field label={`Progresso — ${progress}%`}>

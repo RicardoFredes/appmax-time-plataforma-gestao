@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -208,24 +209,24 @@ export function ProjectFormDialog({
             </Select>
           </Field>
           <Field label="Início">
-            <Input
-              type="date"
+            <DatePicker
               value={form.startDate ?? ""}
-              onChange={(e) => patch({ startDate: e.target.value || null })}
+              onChange={(v) => patch({ startDate: v || null })}
+              clearable
             />
           </Field>
           <Field label="Previsão (prazo)">
-            <Input
-              type="date"
+            <DatePicker
               value={form.dueDate ?? ""}
-              onChange={(e) => patch({ dueDate: e.target.value || null })}
+              onChange={(v) => patch({ dueDate: v || null })}
+              clearable
             />
           </Field>
           <Field label="Fechamento">
-            <Input
-              type="date"
+            <DatePicker
               value={form.closedDate ?? ""}
-              onChange={(e) => patch({ closedDate: e.target.value || null })}
+              onChange={(v) => patch({ closedDate: v || null })}
+              clearable
             />
           </Field>
           <Field label="Time">
