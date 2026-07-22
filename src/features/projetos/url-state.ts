@@ -20,24 +20,38 @@ export interface ProjectsUrlState {
   /** Quarter no param, ou `null` quando ausente (o componente resolve p/ o atual). */
   quarter: string | null;
   grouping: Grouping;
+  /** Mostrar projetos concluídos (escondidos por padrão, como em Tarefas). */
+  showDone: boolean;
+  /** Ids dos engenheiros selecionados no filtro (vazio = todos). */
+  engineers: string[];
 }
 
 export function parseProjectsState(search: string): ProjectsUrlState {
   const p = new URLSearchParams(search);
   const por = p.get("por");
+  const engineersRaw = p.get("eng");
   return {
     quarter: p.get("quarter"),
     grouping: por && GROUPINGS.includes(por as Grouping) ? (por as Grouping) : DEFAULT_GROUPING,
+    showDone: p.get("done") === "1",
+    engineers: engineersRaw ? engineersRaw.split(",").filter(Boolean) : [],
   };
 }
 
 /**
  * Monta a query string refletindo o estado, **preservando** params que não são
  * desta página (ex.: `chrome`, filtros da aba Tarefas). Só grava o que difere do
- * padrão (quarter atual / `prioridade`), mantendo a URL limpa. Inclui o `?`.
+ * padrão (quarter atual / `prioridade` / concluídos escondidos / sem filtro de
+ * engenheiro), mantendo a URL limpa. Inclui o `?`.
  */
 export function buildProjectsSearch(
-  s: { quarter: string; grouping: Grouping; currentQuarter: string },
+  s: {
+    quarter: string;
+    grouping: Grouping;
+    currentQuarter: string;
+    showDone: boolean;
+    engineers: string[];
+  },
   currentSearch: string,
 ): string {
   const p = new URLSearchParams(currentSearch);
@@ -45,6 +59,10 @@ export function buildProjectsSearch(
   else p.delete("quarter");
   if (s.grouping !== DEFAULT_GROUPING) p.set("por", s.grouping);
   else p.delete("por");
+  if (s.showDone) p.set("done", "1");
+  else p.delete("done");
+  if (s.engineers.length) p.set("eng", s.engineers.join(","));
+  else p.delete("eng");
   const str = p.toString();
   return str ? `?${str}` : "";
 }

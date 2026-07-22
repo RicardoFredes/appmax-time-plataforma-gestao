@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FolderKanban, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,18 +11,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useConfirm } from "@/components/ui/confirm";
-import { EXTERNAL_NAV_EVENT } from "@/lib/route-sync";
 import { useSupabaseSession } from "@/lib/useSupabaseSession";
 import type { SustentacaoData } from "@/features/tasks/types";
+import { EngineerFilter, HideDoneToggle } from "./ProjectFilters";
 import { ProjectDetail } from "./ProjectDetail";
 import { ProjectFormDialog } from "./ProjectFormDialog";
 import { ReportFormDialog } from "./ReportFormDialog";
 import { ProjectsReport } from "./ProjectsReport";
 import { useProjectsData } from "./useProjectsData";
+import { useProjectsFilters } from "./useProjectsFilters";
 import { useProjectActions } from "./project-actions";
 import type { Project } from "./types";
-import { parseProjectsState, buildProjectsSearch, type Grouping } from "./url-state";
-import { quarterOf, quarterLabel, availableQuarters } from "./derive";
+import { quarterLabel } from "./derive";
 
 /**
  * Sub-rota da aba: id do projeto aberto (via hash `#/projetos/<id>`), ou `null`
@@ -64,64 +64,22 @@ export function ProjectsPage({ sustentacao }: { sustentacao?: SustentacaoData })
   // `reporting` = novo reporte / edição; `reportId` presente → edita aquele registro.
   const [reporting, setReporting] = useState<{ project: Project; reportId?: string } | null>(null);
 
-  // Quarter atual pelo relógio do cliente; a visão principal começa nele.
-  const currentQuarter = useMemo(() => quarterOf(new Date()), []);
-
-  // Filtros no query string (padrão do projeto — ver ./url-state.ts). Estado
-  // inicial vindo da URL; `quarter` ausente cai no atual.
-  const initial = useMemo(() => parseProjectsState(window.location.search), []);
-  const [quarter, setQuarter] = useState(() => initial.quarter ?? currentQuarter);
-  const [grouping, setGrouping] = useState<Grouping>(initial.grouping);
-
-  const quarters = useMemo(() => {
-    const qs = availableQuarters(allProjects, currentQuarter);
-    return qs.includes(quarter) ? qs : [quarter, ...qs].sort((a, b) => b.localeCompare(a));
-  }, [allProjects, currentQuarter, quarter]);
-
-  // Reflete os filtros na URL (replaceState — não polui o histórico).
-  useEffect(() => {
-    const search = buildProjectsSearch(
-      { quarter, grouping, currentQuarter },
-      window.location.search,
-    );
-    const url = window.location.pathname + search + window.location.hash;
-    window.history.replaceState(null, "", url);
-  }, [quarter, grouping, currentQuarter]);
-
-  // Re-lê a URL quando o backoffice (embed) empurra novos filtros — sem isto o
-  // estado seria lido só no mount e o sync backoffice -> painel não refletiria.
-  useEffect(() => {
-    const reread = () => {
-      const s = parseProjectsState(window.location.search);
-      setQuarter(s.quarter && quarters.includes(s.quarter) ? s.quarter : currentQuarter);
-      setGrouping(s.grouping);
-    };
-    window.addEventListener(EXTERNAL_NAV_EVENT, reread);
-    return () => window.removeEventListener(EXTERNAL_NAV_EVENT, reread);
-  }, [quarters, currentQuarter]);
-
-  const projects = useMemo(
-    () => allProjects.filter((p) => p.quarter === quarter),
-    [allProjects, quarter],
-  );
-
-  const stats = useMemo(() => {
-    const active = projects.filter(
-      (p) => p.status === "in_progress" || p.status === "testing",
-    ).length;
-    const done = projects.filter((p) => p.status === "done").length;
-    // Data do reporte mais recente entre os projetos (referência do relatório).
-    const date =
-      projects
-        .flatMap((p) => p.reports.map((r) => r.date))
-        .sort((a, b) => b.localeCompare(a))[0] ?? null;
-    return {
-      total: projects.length,
-      active,
-      done,
-      date,
-    };
-  }, [projects]);
+  const {
+    currentQuarter,
+    quarter,
+    setQuarter,
+    quarters,
+    grouping,
+    setGrouping,
+    showDone,
+    setShowDone,
+    engineerFilter,
+    toggleEngineer,
+    quarterProjects,
+    engineerOptions,
+    projects,
+    stats,
+  } = useProjectsFilters(allProjects);
 
   // Estados de carregamento/erro do Supabase.
   if (state.status === "loading") return <ProjectsSkeleton />;
@@ -243,19 +201,36 @@ export function ProjectsPage({ sustentacao }: { sustentacao?: SustentacaoData })
             Nenhum projeto cadastrado ainda.
             {canEdit && " Use “Novo projeto” para começar."}
           </Card>
-        ) : projects.length === 0 ? (
+        ) : quarterProjects.length === 0 ? (
           <Card className="p-8 text-center text-sm text-muted-foreground">
             Nenhum projeto em {quarterLabel(quarter)}.
           </Card>
         ) : (
-          <ProjectsReport
-            projects={projects}
-            stats={stats}
-            sustentacao={sustentacao}
-            grouping={grouping}
-            onGroupingChange={setGrouping}
-            onOpen={(pid) => navigate(pid)}
-          />
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <EngineerFilter
+                engineers={engineerOptions}
+                selected={engineerFilter}
+                onToggle={toggleEngineer}
+              />
+              <HideDoneToggle showDone={showDone} onToggle={() => setShowDone((v) => !v)} />
+            </div>
+
+            {projects.length === 0 ? (
+              <Card className="p-8 text-center text-sm text-muted-foreground">
+                Nenhum projeto com os filtros selecionados.
+              </Card>
+            ) : (
+              <ProjectsReport
+                projects={projects}
+                stats={stats}
+                sustentacao={sustentacao}
+                grouping={grouping}
+                onGroupingChange={setGrouping}
+                onOpen={(pid) => navigate(pid)}
+              />
+            )}
+          </>
         )}
 
         <div className="flex items-start gap-1.5 text-xs text-muted-foreground">

@@ -15,11 +15,15 @@ export const STATUS_ORDER: ProjectStatus[] = [
 
 export const STATUS_META: Record<
   ProjectStatus,
-  { label: string; color: string; badge: "default" | "info" | "secondary" | "destructive" | "warning" | "success" }
+  {
+    label: string;
+    color: string;
+    badge: "default" | "info" | "secondary" | "destructive" | "warning" | "success" | "fuchsia";
+  }
 > = {
   discovery: { label: "Discovery", color: "#94a3b8", badge: "secondary" }, // slate
-  refinement: { label: "Refinement", color: "#a78bfa", badge: "default" }, // violet
-  in_progress: { label: "In Progress", color: "#9b6afa", badge: "default" }, // roxo Appmax
+  refinement: { label: "Refinement", color: "#d946ef", badge: "fuchsia" }, // fuchsia
+  in_progress: { label: "In Progress", color: "#a78bfa", badge: "default" }, // violet (roxo Appmax)
   testing: { label: "Testing", color: "#0ea5e9", badge: "info" }, // sky
   blocked: { label: "Blocked", color: "#ef4444", badge: "destructive" }, // red
   paused: { label: "Paused", color: "#f59e0b", badge: "warning" }, // amber
