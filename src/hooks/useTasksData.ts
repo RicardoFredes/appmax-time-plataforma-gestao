@@ -26,11 +26,13 @@ async function loadTasksData(): Promise<TasksData> {
   return (await res.json()) as TasksData;
 }
 
-export function useTasksData(): State {
+export function useTasksData(): { state: State; refreshing: boolean; refetch: () => void } {
   const [state, setState] = useState<State>({ status: "loading" });
+  const [refreshing, setRefreshing] = useState(false);
   const activeRef = useRef(true);
 
   const load = useCallback(() => {
+    setRefreshing(true);
     loadTasksData()
       .then((data) => {
         if (activeRef.current) setState({ status: "ready", data });
@@ -46,6 +48,9 @@ export function useTasksData(): State {
                   error: err instanceof Error ? err.message : String(err),
                 },
           );
+      })
+      .finally(() => {
+        if (activeRef.current) setRefreshing(false);
       });
   }, []);
 
@@ -64,5 +69,5 @@ export function useTasksData(): State {
     };
   }, [load]);
 
-  return state;
+  return { state, refreshing, refetch: load };
 }

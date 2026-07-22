@@ -3,6 +3,7 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTasksData } from "@/hooks/useTasksData";
+import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,7 +73,15 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-function Header({ data }: { data: TasksData }) {
+function Header({
+  data,
+  refreshing,
+  onRefresh,
+}: {
+  data: TasksData;
+  refreshing: boolean;
+  onRefresh: () => void;
+}) {
   const unassigned = data.tasks.filter(
     (t) => t.assigneeName === "Não atribuída",
   ).length;
@@ -85,8 +94,17 @@ function Header({ data }: { data: TasksData }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Painel de Tarefas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             Jira · tecnologia-appmax · atualizado em {generated}
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              title="Atualizar agora"
+              className="text-muted-foreground/70 transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+            </button>
           </p>
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -166,7 +184,7 @@ function EmbedRedirect() {
 }
 
 export function App() {
-  const state = useTasksData();
+  const { state, refreshing, refetch } = useTasksData();
   const [page, navigate] = usePage();
 
   // Sincroniza rota + filtros com a URL do backoffice quando embutido.
@@ -194,7 +212,7 @@ export function App() {
           <FeriasPage data={state.data.sustentacao} />
         ) : (
           <div className="space-y-6">
-            <Header data={state.data} />
+            <Header data={state.data} refreshing={refreshing} onRefresh={refetch} />
             <TasksPanel data={state.data} />
           </div>
         ))}
