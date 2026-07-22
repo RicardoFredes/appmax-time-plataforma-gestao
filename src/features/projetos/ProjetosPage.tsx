@@ -547,6 +547,38 @@ const DIMENSAO_LABEL: Record<Dimensao, string> = {
 
 /* ---------------------------------------------------------- relatório da semana */
 
+/**
+ * Copia texto para a área de transferência. Dentro do iframe do backoffice a
+ * `navigator.clipboard` costuma ser bloqueada (permission policy / foco), então
+ * caímos num `<textarea>` + `execCommand("copy")`. Retorna se conseguiu copiar.
+ */
+async function copiarTexto(texto: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch {
+    // cai no fallback abaixo
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function Relatorio({
   projetos,
   stats,
@@ -576,12 +608,9 @@ function Relatorio({
   );
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(texto);
+    if (await copiarTexto(texto)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // clipboard indisponível: silencioso (o texto segue visível abaixo).
     }
   };
 

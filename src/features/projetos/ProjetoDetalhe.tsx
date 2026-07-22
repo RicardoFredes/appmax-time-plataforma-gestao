@@ -190,7 +190,7 @@ export function ProjetoDetalhe({
           </span>
         </div>
         {projeto.descricao && (
-          <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
+          <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm text-muted-foreground">
             <Linkify texto={projeto.descricao} />
           </p>
         )}

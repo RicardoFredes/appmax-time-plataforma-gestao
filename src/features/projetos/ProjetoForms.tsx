@@ -389,9 +389,9 @@ export function RegistroFormDialog({
   semana?: string;
   onSaved: () => void;
 }) {
-  const semana = semanaEditar ?? mondayISO();
-  // Editando uma semana que já tem registro (muda o título/descrição).
-  const editando = semanaEditar != null && projeto.registros.some((r) => r.semana === semana);
+  const [semana, setSemana] = useState(() => mondayISO());
+  // Editando uma semana que já tem registro (muda o título/descrição e o pré-preenchimento).
+  const editando = projeto.registros.some((r) => r.semana === semana);
   const [progresso, setProgresso] = useState(0);
   const [saude, setSaude] = useState(3);
   const [nota, setNota] = useState("");
@@ -399,16 +399,41 @@ export function RegistroFormDialog({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  // Ao abrir: começa na semana pedida (edição do histórico) ou na semana corrente.
+  useEffect(() => {
+    if (!open) return;
+    setSemana(semanaEditar ?? mondayISO());
+  }, [open, semanaEditar]);
+
+  // Pré-preenche os campos. Só carrega tudo (inclusive a nota) quando é uma
+  // **edição** de um registro existente vinda do histórico (`semanaEditar`). Ao
+  // **reportar** (botão Reportar), começa em branco: nota/marco vazios e progresso
+  // herdado do último registro — é um reporte novo, não uma cópia do anterior.
   useEffect(() => {
     if (!open) return;
     setErro(null);
     const desta = projeto.registros.find((r) => r.semana === semana);
-    const base = desta ?? ultimoRegistro(projeto);
-    setProgresso(desta?.progresso ?? base?.progresso ?? 0);
-    setSaude(desta?.saude ?? base?.saude ?? 3);
-    setNota(desta?.nota ?? "");
-    setMarco((desta?.marco as MarcoOpt) ?? "");
-  }, [open, projeto, semana]);
+    const editandoHistorico = semanaEditar != null;
+    if (desta && editandoHistorico) {
+      setProgresso(desta.progresso);
+      setSaude(desta.saude);
+      setNota(desta.nota ?? "");
+      setMarco((desta.marco as MarcoOpt) ?? "");
+    } else {
+      const anterior = ultimoRegistro(projeto);
+      setProgresso(desta?.progresso ?? anterior?.progresso ?? 0);
+      setSaude(desta?.saude ?? anterior?.saude ?? 3);
+      setNota("");
+      setMarco("");
+    }
+  }, [open, projeto, semana, semanaEditar]);
+
+  // Qualquer data escolhida é ancorada na segunda-feira daquela semana (PK do registro).
+  const trocarData = (v: string) => {
+    if (!v) return;
+    const [y, mo, d] = v.split("-").map(Number);
+    setSemana(mondayISO(new Date(y, mo - 1, d)));
+  };
 
   const salvar = async () => {
     setSalvando(true);
@@ -439,12 +464,21 @@ export function RegistroFormDialog({
             {editando ? "Editar registro" : "Reportar semana"} · {projeto.codigo}
           </DialogTitle>
           <DialogDescription>
-            {projeto.nome} — semana de {semana}
-            {editando ? "." : " (edita no lugar se já existir)."}
+            {projeto.nome}
+            {editando
+              ? " — já existe registro nesta semana; será editado no lugar."
+              : " — escolha a semana e preencha o reporte."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          <Field label="Semana (segunda-feira)">
+            <Input type="date" value={semana} onChange={(e) => trocarData(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              A semana é ancorada na segunda-feira; qualquer data é ajustada para ela.
+            </p>
+          </Field>
+
           <Field label={`Progresso — ${progresso}%`}>
             <div className="flex items-center gap-3">
               <input
