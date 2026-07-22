@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useConfirm } from "@/components/ui/confirm";
 import { initials, firstName } from "@/lib/people";
 import { EXTERNAL_NAV_EVENT } from "@/lib/route-sync";
 import { useSupabaseSession } from "@/lib/useSupabaseSession";
@@ -39,6 +40,7 @@ import { ProjetoFormDialog, RegistroFormDialog } from "./ProjetoForms";
 import { Prioridade } from "./Prioridade";
 import { Velocimetro } from "./Velocimetro";
 import { useProjetosData } from "./useProjetosData";
+import { deleteProjeto, deleteRegistro } from "./data";
 import type { Projeto } from "./types";
 import { parseProjetosState, buildProjetosSearch } from "./url-state";
 import {
@@ -778,6 +780,7 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
   const { state, refetch } = useProjetosData();
   const session = useSupabaseSession();
   const podeEditar = session !== null;
+  const confirm = useConfirm();
 
   // Dados carregados (vazio enquanto carrega — mantém a ordem dos hooks estável).
   const projetosAll = state.status === "ready" ? state.data.projetos : [];
@@ -785,7 +788,8 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
   // Dialogs de CRUD.
   const [novoOpen, setNovoOpen] = useState(false);
   const [editar, setEditar] = useState<Projeto | null>(null);
-  const [reportar, setReportar] = useState<Projeto | null>(null);
+  // `reportar` = reportar/editar registro; `semana` presente → edita aquela semana.
+  const [reportar, setReportar] = useState<{ projeto: Projeto; semana?: string } | null>(null);
 
   // Quarter atual pelo relógio do cliente; a visão principal começa nele.
   const quarterAtual = useMemo(() => quarterDe(new Date()), []);
@@ -865,6 +869,51 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
     ? projetosAll.find((p) => p.codigo === id) ?? projetosAll.find((p) => p.id === id) ?? null
     : null;
 
+  // Apaga o projeto inteiro (confirma antes; volta à lista e recarrega).
+  const apagarProjeto = async (projeto: Projeto) => {
+    const ok = await confirm({
+      title: "Apagar projeto?",
+      description: `"${projeto.nome}" e todo o seu histórico serão removidos. Não dá para desfazer.`,
+      confirmLabel: "Apagar",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteProjeto(projeto.id);
+      navigate(null);
+      refetch();
+    } catch (e) {
+      await confirm({
+        title: "Não foi possível apagar",
+        description: e instanceof Error ? e.message : String(e),
+        confirmLabel: "Ok",
+        cancelLabel: "Fechar",
+      });
+    }
+  };
+
+  // Apaga um registro semanal (confirma antes; recarrega ao concluir).
+  const apagarRegistro = async (projeto: Projeto, semana: string) => {
+    const ok = await confirm({
+      title: "Apagar registro?",
+      description: `O registro da semana de ${semana} será removido.`,
+      confirmLabel: "Apagar",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteRegistro(projeto.id, semana);
+      refetch();
+    } catch (e) {
+      await confirm({
+        title: "Não foi possível apagar",
+        description: e instanceof Error ? e.message : String(e),
+        confirmLabel: "Ok",
+        cancelLabel: "Fechar",
+      });
+    }
+  };
+
   // Dialogs de CRUD, montados uma vez (acessíveis do detalhe e da lista).
   const dialogs = (
     <>
@@ -872,6 +921,7 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
         open={novoOpen}
         onOpenChange={setNovoOpen}
         projeto={null}
+        projetosExistentes={projetosAll}
         quarterAtual={quarterAtual}
         onSaved={refetch}
       />
@@ -880,6 +930,7 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
           open
           onOpenChange={(v) => !v && setEditar(null)}
           projeto={editar}
+          projetosExistentes={projetosAll}
           quarterAtual={quarterAtual}
           onSaved={refetch}
         />
@@ -888,7 +939,8 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
         <RegistroFormDialog
           open
           onOpenChange={(v) => !v && setReportar(null)}
-          projeto={reportar}
+          projeto={reportar.projeto}
+          semana={reportar.semana}
           onSaved={refetch}
         />
       )}
@@ -902,7 +954,10 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
         onBack={() => navigate(null)}
         podeEditar={podeEditar}
         onEditar={() => setEditar(projetoAberto)}
-        onReportar={() => setReportar(projetoAberto)}
+        onReportar={() => setReportar({ projeto: projetoAberto })}
+        onApagar={() => apagarProjeto(projetoAberto)}
+        onEditarRegistro={(semana) => setReportar({ projeto: projetoAberto, semana })}
+        onApagarRegistro={(semana) => apagarRegistro(projetoAberto, semana)}
       />
     ) : (
       <div className="space-y-4">

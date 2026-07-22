@@ -13,7 +13,9 @@ import {
   Flag,
   Info,
   Minus,
+  MoreVertical,
   Pencil,
+  Trash2,
   TrendingDown,
   TrendingUp,
   UserRound,
@@ -21,6 +23,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownItem, DropdownMenu } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
 import { EvolucaoChart } from "./EvolucaoChart";
 import { Velocimetro } from "./Velocimetro";
@@ -86,12 +89,21 @@ export function ProjetoDetalhe({
   podeEditar = false,
   onEditar,
   onReportar,
+  onApagar,
+  onEditarRegistro,
+  onApagarRegistro,
 }: {
   projeto: Projeto;
   onBack: () => void;
   podeEditar?: boolean;
   onEditar?: () => void;
   onReportar?: () => void;
+  /** Apaga o projeto inteiro. */
+  onApagar?: () => void;
+  /** Edita o registro de uma semana específica (recebe a chave `semana`). */
+  onEditarRegistro?: (semana: string) => void;
+  /** Apaga o registro de uma semana específica (recebe a chave `semana`). */
+  onApagarRegistro?: (semana: string) => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const rs = useMemo(() => registrosOrdenados(projeto), [projeto]);
@@ -117,11 +129,27 @@ export function ProjetoDetalhe({
           {podeEditar && (
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={onReportar}>
-                <CalendarPlus /> Reportar semana
+                <CalendarPlus /> Reportar
               </Button>
-              <Button variant="outline" size="sm" onClick={onEditar}>
-                <Pencil /> Editar
-              </Button>
+              <DropdownMenu
+                trigger={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-9 px-0"
+                    aria-label="Mais ações"
+                  >
+                    <MoreVertical />
+                  </Button>
+                }
+              >
+                <DropdownItem onSelect={onEditar}>
+                  <Pencil className="h-4 w-4" /> Editar
+                </DropdownItem>
+                <DropdownItem destructive onSelect={onApagar}>
+                  <Trash2 className="h-4 w-4" /> Apagar
+                </DropdownItem>
+              </DropdownMenu>
             </div>
           )}
         </div>
@@ -219,7 +247,7 @@ export function ProjetoDetalhe({
         {/* Coluna 2: lista dos registros (ocupa a altura total da coluna) */}
         <Card className="flex h-full flex-col overflow-hidden">
           <div className="border-b px-4 py-3 text-sm font-semibold tracking-tight">
-            Histórico semanal ({rs.length})
+            Histórico ({rs.length})
           </div>
           <div className="flex-1 divide-y overflow-y-auto">
             {desc.map((r, i) => {
@@ -228,7 +256,7 @@ export function ProjetoDetalhe({
               const anterior = m ? undefined : desc.slice(i + 1).find((x) => !x.marco);
               const delta = anterior ? r.progresso - anterior.progresso : null;
               return (
-                <div key={r.semana} className="p-4">
+                <div key={r.semana} className="group p-4">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="inline-flex items-center gap-1.5 text-sm font-medium">
                       {m ? (
@@ -247,6 +275,32 @@ export function ProjetoDetalhe({
                       </span>
                     ) : (
                       <SaudeBadge saude={r.saude} />
+                    )}
+                    {podeEditar && (onEditarRegistro || onApagarRegistro) && (
+                      <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                        {onEditarRegistro && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground"
+                            title="Editar este registro"
+                            onClick={() => onEditarRegistro(r.semana)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {onApagarRegistro && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            title="Apagar este registro"
+                            onClick={() => onApagarRegistro(r.semana)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                   {r.nota ? (

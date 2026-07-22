@@ -6,7 +6,7 @@
  * - `RegistroFormDialog`: reporta o registro da semana corrente (edit-in-place por PK).
  */
 import { useEffect, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +35,6 @@ import {
   ultimoRegistro,
 } from "./derive";
 import {
-  deleteProjeto,
   fetchTeamMembers,
   fetchTeams,
   setEngenheiros,
@@ -54,6 +53,19 @@ function mondayISO(d = new Date()): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
+}
+
+/**
+ * Próximo código incremental (`PRJ-<n>`) a partir dos existentes — usa o maior
+ * número já usado + 1 (não reaproveita buracos deixados por projetos apagados).
+ */
+function nextCodigo(projetos: Projeto[]): string {
+  let max = 0;
+  for (const p of projetos) {
+    const m = /^PRJ-(\d+)$/i.exec(p.codigo.trim());
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return `PRJ-${max + 1}`;
 }
 
 /** Slug estável a partir do nome (id do projeto, usado na URL de detalhe). */
@@ -109,6 +121,7 @@ export function ProjetoFormDialog({
   open,
   onOpenChange,
   projeto,
+  projetosExistentes,
   quarterAtual,
   onSaved,
 }: {
@@ -116,6 +129,8 @@ export function ProjetoFormDialog({
   onOpenChange: (v: boolean) => void;
   /** `null` = novo projeto. */
   projeto: Projeto | null;
+  /** Todos os projetos (qualquer quarter) — base do código incremental automático. */
+  projetosExistentes: Projeto[];
   quarterAtual: string;
   onSaved: () => void;
 }) {
@@ -136,7 +151,7 @@ export function ProjetoFormDialog({
       setForm(meta);
       setSelectedIds(new Set(engenheiros.map((e) => e.id)));
     } else {
-      setForm({ ...VAZIO, quarter: quarterAtual });
+      setForm({ ...VAZIO, codigo: nextCodigo(projetosExistentes), quarter: quarterAtual });
       setSelectedIds(new Set());
     }
     fetchTeams()
@@ -146,7 +161,7 @@ export function ProjetoFormDialog({
         setForm((f) => (f.teamId ? f : { ...f, teamId: ts[0]?.id ?? null }));
       })
       .catch((e) => setErro(e instanceof Error ? e.message : String(e)));
-  }, [open, projeto, quarterAtual]);
+  }, [open, projeto, projetosExistentes, quarterAtual]);
 
   // Carrega os membros quando o time muda.
   useEffect(() => {
@@ -206,23 +221,6 @@ export function ProjetoFormDialog({
     }
   };
 
-  const apagar = async () => {
-    if (!projeto) return;
-    if (!window.confirm(`Apagar o projeto "${projeto.nome}"? Isso remove o histórico.`))
-      return;
-    setSalvando(true);
-    setErro(null);
-    try {
-      await deleteProjeto(projeto.id);
-      onSaved();
-      onOpenChange(false);
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSalvando(false);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -234,8 +232,19 @@ export function ProjetoFormDialog({
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Código (ex.: PRJ-1)">
-            <Input value={form.codigo} onChange={(e) => patch({ codigo: e.target.value })} />
+          <Field label="Código">
+            <Input
+              value={form.codigo}
+              readOnly
+              tabIndex={-1}
+              aria-describedby={!projeto ? "codigo-auto" : undefined}
+              className="cursor-default bg-muted text-muted-foreground"
+            />
+            {!projeto && (
+              <p id="codigo-auto" className="text-xs text-muted-foreground">
+                Gerado automaticamente.
+              </p>
+            )}
           </Field>
           <Field label="Quarter (ex.: 2026-Q3)">
             <Input value={form.quarter} onChange={(e) => patch({ quarter: e.target.value })} />
@@ -348,23 +357,14 @@ export function ProjetoFormDialog({
 
         {erro && <p className="text-sm text-destructive">{erro}</p>}
 
-        <DialogFooter className="sm:justify-between">
-          {projeto ? (
-            <Button variant="destructive" onClick={apagar} disabled={salvando}>
-              <Trash2 /> Apagar
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
-              Cancelar
-            </Button>
-            <Button onClick={salvar} disabled={salvando}>
-              {salvando && <Loader2 className="animate-spin" />}
-              Salvar
-            </Button>
-          </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={salvando}>
+            {salvando && <Loader2 className="animate-spin" />}
+            Salvar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -379,14 +379,19 @@ export function RegistroFormDialog({
   open,
   onOpenChange,
   projeto,
+  semana: semanaEditar,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   projeto: Projeto;
+  /** Semana a editar (YYYY-MM-DD). Ausente = reportar a semana corrente. */
+  semana?: string;
   onSaved: () => void;
 }) {
-  const semana = mondayISO();
+  const semana = semanaEditar ?? mondayISO();
+  // Editando uma semana que já tem registro (muda o título/descrição).
+  const editando = semanaEditar != null && projeto.registros.some((r) => r.semana === semana);
   const [progresso, setProgresso] = useState(0);
   const [saude, setSaude] = useState(3);
   const [nota, setNota] = useState("");
@@ -430,9 +435,12 @@ export function RegistroFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reportar semana · {projeto.codigo}</DialogTitle>
+          <DialogTitle>
+            {editando ? "Editar registro" : "Reportar semana"} · {projeto.codigo}
+          </DialogTitle>
           <DialogDescription>
-            {projeto.nome} — semana de {semana} (edita no lugar se já existir).
+            {projeto.nome} — semana de {semana}
+            {editando ? "." : " (edita no lugar se já existir)."}
           </DialogDescription>
         </DialogHeader>
 
