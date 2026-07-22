@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { cn } from "@/lib/utils";
 
 /** Casa URLs http(s). O `www.` é promovido a https na hora de montar o href. */
 const URL_RE = /\b(https?:\/\/[^\s<]+[^\s<.,:;!?)\]}'"]|www\.[^\s<]+[^\s<.,:;!?)\]}'"])/gi;
@@ -45,5 +46,17 @@ export function Linkify({ text }: { text: string }) {
         <Fragment key={i}>{p}</Fragment>
       ))}
     </>
+  );
+}
+
+/**
+ * Texto livre (descrição de projeto, nota de registro): preserva quebras de
+ * linha (`whitespace-pre-wrap`) e promove URLs a links via `Linkify`.
+ */
+export function FreeText({ text, className }: { text: string; className?: string }) {
+  return (
+    <p className={cn("whitespace-pre-wrap text-sm text-muted-foreground", className)}>
+      <Linkify text={text} />
+    </p>
   );
 }

@@ -30,7 +30,7 @@ import {
   trend,
 } from "./derive";
 import { Priority } from "./Priority";
-import { Linkify } from "./Linkify";
+import { FreeText } from "./Linkify";
 import { Delta, HealthBadge, MILESTONE_META } from "./project-detail-parts";
 import type { Project } from "./types";
 
@@ -141,11 +141,7 @@ export function ProjectDetail({
             <span className="font-medium text-foreground">{fmtDate(project.closedDate)}</span>
           </span>
         </div>
-        {project.description && (
-          <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm text-muted-foreground">
-            <Linkify text={project.description} />
-          </p>
-        )}
+        {project.description && <FreeText text={project.description} className="mt-4 max-w-2xl" />}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -257,9 +253,7 @@ export function ProjectDetail({
                     )}
                   </div>
                   {r.note ? (
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                      <Linkify text={r.note} />
-                    </p>
+                    <FreeText text={r.note} className="mt-1.5" />
                   ) : m ? null : (
                     <p className="mt-1.5 text-sm italic text-muted-foreground/60">Sem nota.</p>
                   )}
