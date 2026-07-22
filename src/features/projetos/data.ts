@@ -4,28 +4,30 @@
  * legível só por autenticados).
  *
  * O **banco é em inglês** (tabelas/colunas: `teams`, `team_members`, `projects`,
- * `project_engineers`, `weekly_reports`); os tipos do app são em português
- * (`Projeto`, `Engenheiro`, `Team`, `Registro`). A tradução PT↔EN vive só
- * aqui, na fronteira. `fetchProjetos` remonta o `ProjetosData` que a UI já consome.
+ * `project_engineers`, `weekly_reports`) e os tipos do app também são em inglês;
+ * esta camada só faz a ponte de nomes (snake_case do banco ↔ camelCase do app) e
+ * remonta o `ProjectsData` que a UI já consome (`fetchProjects`).
  */
 import { supabase } from "@/lib/supabase";
 import type {
-  Engenheiro,
-  Projeto,
-  ProjetoStatus,
-  ProjetosData,
-  Registro,
-  RegistroInput,
+  Engineer,
+  Milestone,
+  Project,
+  ProjectStatus,
+  ProjectsData,
+  Report,
+  ReportInput,
   Team,
 } from "./types";
 
 /** Campos de topo do projeto (sem engenheiros/registros, que são tabelas à parte). */
-export type ProjetoMeta = Omit<Projeto, "engenheiros" | "registros">;
+export type ProjectMeta = Omit<Project, "engineers" | "reports">;
 
-type Marco = NonNullable<Registro["marco"]>;
-/** marco (app, pt) ↔ milestone (banco, en). */
-const MARCO_TO_DB: Record<Marco, string> = { inicio: "start", fim: "end", info: "info" };
-const MARCO_FROM_DB: Record<string, Marco> = { start: "inicio", end: "fim", info: "info" };
+/** Marcos válidos no banco (mesmos valores do app, sem tradução). */
+const MILESTONES: Milestone[] = ["start", "end", "info"];
+function asMilestone(v: string | null): Milestone | undefined {
+  return v && MILESTONES.includes(v as Milestone) ? (v as Milestone) : undefined;
+}
 
 interface RawProfile {
   id: string;
@@ -33,8 +35,8 @@ interface RawProfile {
   avatar_url: string | null;
 }
 
-function toEngenheiro(p: RawProfile): Engenheiro {
-  return { id: p.id, nome: p.name ?? "—", avatarUrl: p.avatar_url };
+function toEngineer(p: RawProfile): Engineer {
+  return { id: p.id, name: p.name ?? "—", avatarUrl: p.avatar_url };
 }
 
 const SELECT =
@@ -69,62 +71,60 @@ interface RawRow {
     | null;
 }
 
-/** `ProjetoMeta` (pt) → linha do banco (en). */
-function metaToRow(m: ProjetoMeta) {
+/** `ProjectMeta` → linha do banco. */
+function metaToRow(m: ProjectMeta) {
   return {
     id: m.id,
-    code: m.codigo,
-    name: m.nome,
-    description: m.descricao,
+    code: m.code,
+    name: m.name,
+    description: m.description,
     status: m.status,
-    priority: m.prioridade,
+    priority: m.priority,
     quarter: m.quarter,
     team_id: m.teamId,
-    start_date: m.inicio,
-    due_date: m.prazo,
-    closed_date: m.fechamento,
+    start_date: m.startDate,
+    due_date: m.dueDate,
+    closed_date: m.closedDate,
   };
 }
 
-/** Lê todos os projetos e remonta o `ProjetosData`. */
-export async function fetchProjetos(): Promise<ProjetosData> {
+/** Lê todos os projetos e remonta o `ProjectsData`. */
+export async function fetchProjects(): Promise<ProjectsData> {
   const { data, error } = await supabase.from("projects").select(SELECT);
   if (error) throw new Error(error.message);
 
-  const projetos: Projeto[] = ((data ?? []) as unknown as RawRow[]).map((row) => ({
+  const projects: Project[] = ((data ?? []) as unknown as RawRow[]).map((row) => ({
     id: row.id,
-    codigo: row.code,
-    nome: row.name,
-    descricao: row.description ?? "",
-    status: row.status as ProjetoStatus,
+    code: row.code,
+    name: row.name,
+    description: row.description ?? "",
+    status: row.status as ProjectStatus,
     teamId: row.team_id,
-    prioridade: row.priority,
+    priority: row.priority,
     quarter: row.quarter,
-    inicio: row.start_date,
-    prazo: row.due_date,
-    fechamento: row.closed_date,
-    engenheiros: (row.project_engineers ?? [])
+    startDate: row.start_date,
+    dueDate: row.due_date,
+    closedDate: row.closed_date,
+    engineers: (row.project_engineers ?? [])
       .map((pe) => pe.profiles)
       .filter((p): p is RawProfile => p != null)
-      .map(toEngenheiro)
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
-    registros: (row.weekly_reports ?? [])
-      .map((r): Registro => ({
+      .map(toEngineer)
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    reports: (row.weekly_reports ?? [])
+      .map((r): Report => ({
         id: r.id,
-        data: r.date,
-        criadoEm: r.created_at,
-        progresso: r.progress,
-        saude: r.health,
-        nota: r.note ?? "",
-        ...(r.milestone && MARCO_FROM_DB[r.milestone]
-          ? { marco: MARCO_FROM_DB[r.milestone] }
-          : {}),
+        date: r.date,
+        createdAt: r.created_at,
+        progress: r.progress,
+        health: r.health,
+        note: r.note ?? "",
+        ...(asMilestone(r.milestone) ? { milestone: asMilestone(r.milestone) } : {}),
       }))
       // Ordena por data e, no mesmo dia, pelo momento de criação.
-      .sort((a, b) => a.data.localeCompare(b.data) || a.criadoEm.localeCompare(b.criadoEm)),
+      .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)),
   }));
 
-  return { projetos };
+  return { projects };
 }
 
 /** Lista os times. */
@@ -132,12 +132,12 @@ export async function fetchTeams(): Promise<Team[]> {
   const { data, error } = await supabase.from("teams").select("id, slug, name");
   if (error) throw new Error(error.message);
   return ((data ?? []) as { id: string; slug: string; name: string }[])
-    .map((t) => ({ id: t.id, slug: t.slug, nome: t.name }))
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    .map((t) => ({ id: t.id, slug: t.slug, name: t.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** Membros de um time (fonte do picker de engenheiros do projeto). */
-export async function fetchTeamMembers(teamId: string): Promise<Engenheiro[]> {
+export async function fetchTeamMembers(teamId: string): Promise<Engineer[]> {
   const { data, error } = await supabase
     .from("team_members")
     .select("profiles(id, name, avatar_url)")
@@ -146,12 +146,12 @@ export async function fetchTeamMembers(teamId: string): Promise<Engenheiro[]> {
   return ((data ?? []) as unknown as { profiles: RawProfile | null }[])
     .map((m) => m.profiles)
     .filter((p): p is RawProfile => p != null)
-    .map(toEngenheiro)
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    .map(toEngineer)
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** Cria/atualiza os campos de topo de um projeto. */
-export async function upsertProjeto(meta: ProjetoMeta): Promise<void> {
+export async function upsertProject(meta: ProjectMeta): Promise<void> {
   const { error } = await supabase
     .from("projects")
     .upsert(metaToRow(meta), { onConflict: "id" });
@@ -159,12 +159,12 @@ export async function upsertProjeto(meta: ProjetoMeta): Promise<void> {
 }
 
 /** Substitui o conjunto de engenheiros de um projeto pelos `userIds` informados. */
-export async function setEngenheiros(
-  projetoId: string,
+export async function setEngineers(
+  projectId: string,
   userIds: string[],
 ): Promise<void> {
   // Remove os que saíram.
-  let del = supabase.from("project_engineers").delete().eq("project_id", projetoId);
+  let del = supabase.from("project_engineers").delete().eq("project_id", projectId);
   if (userIds.length > 0) del = del.not("user_id", "in", `(${userIds.join(",")})`);
   const { error: delErr } = await del;
   if (delErr) throw new Error(delErr.message);
@@ -174,7 +174,7 @@ export async function setEngenheiros(
     const { error: insErr } = await supabase
       .from("project_engineers")
       .upsert(
-        userIds.map((user_id) => ({ project_id: projetoId, user_id })),
+        userIds.map((user_id) => ({ project_id: projectId, user_id })),
         { onConflict: "project_id,user_id" },
       );
     if (insErr) throw new Error(insErr.message);
@@ -182,47 +182,47 @@ export async function setEngenheiros(
 }
 
 /** Payload (app → banco) de um registro. */
-function registroToRow(projetoId: string, r: RegistroInput) {
+function reportToRow(projectId: string, r: ReportInput) {
   return {
-    project_id: projetoId,
-    date: r.data,
-    progress: r.progresso,
-    health: r.saude,
-    note: r.nota,
-    milestone: r.marco ? MARCO_TO_DB[r.marco] : null,
+    project_id: projectId,
+    date: r.date,
+    progress: r.progress,
+    health: r.health,
+    note: r.note,
+    milestone: r.milestone ?? null,
   };
 }
 
 /** Cria um novo registro (data livre; vários por dia são permitidos). */
-export async function criarRegistro(
-  projetoId: string,
-  registro: RegistroInput,
+export async function createReport(
+  projectId: string,
+  report: ReportInput,
 ): Promise<void> {
-  const { error } = await supabase.from("weekly_reports").insert(registroToRow(projetoId, registro));
+  const { error } = await supabase.from("weekly_reports").insert(reportToRow(projectId, report));
   if (error) throw new Error(error.message);
 }
 
 /** Atualiza um registro existente pelo `id`. */
-export async function atualizarRegistro(
-  projetoId: string,
+export async function updateReport(
+  projectId: string,
   id: string,
-  registro: RegistroInput,
+  report: ReportInput,
 ): Promise<void> {
   const { error } = await supabase
     .from("weekly_reports")
-    .update(registroToRow(projetoId, registro))
+    .update(reportToRow(projectId, report))
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
 
 /** Remove um registro pelo `id`. */
-export async function deleteRegistro(id: string): Promise<void> {
+export async function deleteReport(id: string): Promise<void> {
   const { error } = await supabase.from("weekly_reports").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
 /** Remove um projeto (cascata apaga engenheiros vinculados e registros). */
-export async function deleteProjeto(id: string): Promise<void> {
+export async function deleteProject(id: string): Promise<void> {
   const { error } = await supabase.from("projects").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }

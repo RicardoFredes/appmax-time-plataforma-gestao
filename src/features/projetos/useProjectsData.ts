@@ -5,15 +5,15 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { fetchProjetos } from "./data";
-import type { ProjetosData } from "./types";
+import { fetchProjects } from "./data";
+import type { ProjectsData } from "./types";
 
 type State =
   | { status: "loading" }
   | { status: "error"; error: string }
-  | { status: "ready"; data: ProjetosData };
+  | { status: "ready"; data: ProjectsData };
 
-const TABELAS = [
+const TABLES = [
   "projects",
   "project_engineers",
   "weekly_reports",
@@ -21,12 +21,12 @@ const TABELAS = [
   "team_members",
 ] as const;
 
-export function useProjetosData(): { state: State; refetch: () => void } {
+export function useProjectsData(): { state: State; refetch: () => void } {
   const [state, setState] = useState<State>({ status: "loading" });
   const activeRef = useRef(true);
 
   const load = useCallback(() => {
-    fetchProjetos()
+    fetchProjects()
       .then((data) => {
         if (activeRef.current) setState({ status: "ready", data });
       })
@@ -49,7 +49,7 @@ export function useProjetosData(): { state: State; refetch: () => void } {
     load();
 
     const channel = supabase.channel("projetos-db");
-    for (const table of TABELAS) {
+    for (const table of TABLES) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => load());
     }
     channel.subscribe();

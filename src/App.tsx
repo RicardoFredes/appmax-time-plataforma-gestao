@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
-import { ProjetosPage } from "@/features/projetos/ProjetosPage";
+import { ProjectsPage } from "@/features/projetos/ProjectsPage";
 import { BACKOFFICE_PANEL_URL, checkEmbed, showsChrome } from "@/lib/embed";
 import { initRouteSync } from "@/lib/route-sync";
 import type { TasksData } from "@/features/tasks/types";
@@ -187,7 +187,7 @@ export function App() {
       {state.status === "error" && <ErrorState error={state.error} />}
       {state.status === "ready" &&
         (page === "projetos" ? (
-          <ProjetosPage sustentacao={state.data.sustentacao} />
+          <ProjectsPage sustentacao={state.data.sustentacao} />
         ) : page === "sustentacao" ? (
           <SustentacaoPage data={state.data.sustentacao} />
         ) : page === "ferias" ? (

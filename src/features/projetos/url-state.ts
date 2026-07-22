@@ -5,24 +5,29 @@
  * a **rota** fica no hash (`#/projetos/<id>`) e os **filtros** no query string, via
  * History API (`replaceState`), espelhados na URL do backoffice nos dois sentidos.
  * Aqui os params são `quarter` (ex.: `2026-Q3`) e `por` (agrupamento do relatório).
+ *
+ * Nota: os valores de `Grouping` (`prioridade`/`engenheiro`/`status`) e a chave `por`
+ * são **contrato de URL** (linkáveis, espelhados no backoffice) — ficam em PT de propósito.
  */
-import type { Dimensao } from "./ProjetosPage";
 
-const DIMENSOES: Dimensao[] = ["prioridade", "engenheiro", "status"];
-const DIM_DEFAULT: Dimensao = "prioridade";
+/** Agrupamento do relatório. Valores viajam no query param `por` (contrato de URL). */
+export type Grouping = "prioridade" | "engenheiro" | "status";
 
-export interface ProjetosUrlState {
+const GROUPINGS: Grouping[] = ["prioridade", "engenheiro", "status"];
+const DEFAULT_GROUPING: Grouping = "prioridade";
+
+export interface ProjectsUrlState {
   /** Quarter no param, ou `null` quando ausente (o componente resolve p/ o atual). */
   quarter: string | null;
-  dim: Dimensao;
+  grouping: Grouping;
 }
 
-export function parseProjetosState(search: string): ProjetosUrlState {
+export function parseProjectsState(search: string): ProjectsUrlState {
   const p = new URLSearchParams(search);
   const por = p.get("por");
   return {
     quarter: p.get("quarter"),
-    dim: por && DIMENSOES.includes(por as Dimensao) ? (por as Dimensao) : DIM_DEFAULT,
+    grouping: por && GROUPINGS.includes(por as Grouping) ? (por as Grouping) : DEFAULT_GROUPING,
   };
 }
 
@@ -31,14 +36,14 @@ export function parseProjetosState(search: string): ProjetosUrlState {
  * desta página (ex.: `chrome`, filtros da aba Tarefas). Só grava o que difere do
  * padrão (quarter atual / `prioridade`), mantendo a URL limpa. Inclui o `?`.
  */
-export function buildProjetosSearch(
-  s: { quarter: string; dim: Dimensao; quarterAtual: string },
+export function buildProjectsSearch(
+  s: { quarter: string; grouping: Grouping; currentQuarter: string },
   currentSearch: string,
 ): string {
   const p = new URLSearchParams(currentSearch);
-  if (s.quarter && s.quarter !== s.quarterAtual) p.set("quarter", s.quarter);
+  if (s.quarter && s.quarter !== s.currentQuarter) p.set("quarter", s.quarter);
   else p.delete("quarter");
-  if (s.dim !== DIM_DEFAULT) p.set("por", s.dim);
+  if (s.grouping !== DEFAULT_GROUPING) p.set("por", s.grouping);
   else p.delete("por");
   const str = p.toString();
   return str ? `?${str}` : "";

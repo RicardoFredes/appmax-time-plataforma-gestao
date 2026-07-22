@@ -7,13 +7,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { prioridadeMeta } from "./derive";
+import { priorityMeta } from "./derive";
 
 /**
  * Ícone + cor da prioridade no padrão Jira (Highest → Lowest):
  * 5 seta dupla p/ cima (vermelho) … 1 seta dupla p/ baixo (azul).
  */
-const ICONE: Record<number, { Icon: LucideIcon; color: string }> = {
+const ICON: Record<number, { Icon: LucideIcon; color: string }> = {
   5: { Icon: ChevronsUp, color: "#ef4444" }, // Máxima — vermelho
   4: { Icon: ChevronUp, color: "#f97316" }, // Alta — laranja
   3: { Icon: Equal, color: "#f59e0b" }, // Média — âmbar
@@ -22,17 +22,17 @@ const ICONE: Record<number, { Icon: LucideIcon; color: string }> = {
 };
 
 /** Indicador de prioridade no estilo Jira (ícone colorido, com rótulo opcional). */
-export function Prioridade({
-  nivel,
+export function Priority({
+  level,
   showLabel = false,
   className,
 }: {
-  nivel: number;
+  level: number;
   showLabel?: boolean;
   className?: string;
 }) {
-  const { nivel: n, label } = prioridadeMeta(nivel);
-  const { Icon, color } = ICONE[n];
+  const { level: n, label } = priorityMeta(level);
+  const { Icon, color } = ICON[n];
   return (
     <span
       className={cn("inline-flex shrink-0 items-center gap-1", className)}

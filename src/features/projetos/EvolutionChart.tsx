@@ -1,11 +1,11 @@
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { saudeMeta } from "./derive";
-import type { Registro } from "./types";
+import { healthMeta } from "./derive";
+import type { Report } from "./types";
 
 const ACCENT = "#9b6afa"; // roxo Appmax
-const MARCO_COLOR = { inicio: "#9b6afa", fim: "#10b981" } as const; // roxo / emerald
-const MARCO_LABEL = { inicio: "Início", fim: "Fim", info: "Info" } as const;
+const MILESTONE_COLOR = { start: "#9b6afa", end: "#10b981" } as const; // roxo / emerald
+const MILESTONE_LABEL = { start: "Início", end: "Fim", info: "Info" } as const;
 const INFO_COLOR = "#64748b"; // slate (marco informativo, sem saúde)
 
 const W = 460;
@@ -15,14 +15,14 @@ const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
 /** Gráfico de linha da evolução do progresso (%), com pontos coloridos pela saúde. */
-export function EvolucaoChart({ registros }: { registros: Registro[] }) {
-  if (registros.length === 0) return null;
+export function EvolutionChart({ reports }: { reports: Report[] }) {
+  if (reports.length === 0) return null;
 
-  const n = registros.length;
+  const n = reports.length;
   const x = (i: number) => (n === 1 ? PAD.left + PLOT_W / 2 : PAD.left + (i / (n - 1)) * PLOT_W);
   const y = (v: number) => PAD.top + (1 - Math.max(0, Math.min(100, v)) / 100) * PLOT_H;
 
-  const pts = registros.map((r, i) => ({ x: x(i), y: y(r.progresso), r }));
+  const pts = reports.map((r, i) => ({ x: x(i), y: y(r.progress), r }));
   const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const areaPath =
     `M${pts[0].x.toFixed(1)},${(PAD.top + PLOT_H).toFixed(1)} ` +
@@ -71,10 +71,10 @@ export function EvolucaoChart({ registros }: { registros: Registro[] }) {
         <path d={linePath} fill="none" stroke={ACCENT} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
       )}
 
-      {/* Pontos: bandeira (início/fim) ou círculo vazado (info) nos marcos; colorido pela saúde nos demais */}
+      {/* Pontos: bandeira (start/end) ou círculo vazado (info) nos marcos; colorido pela saúde nos demais */}
       {pts.map((p, i) => {
-        if (p.r.marco === "inicio" || p.r.marco === "fim") {
-          const color = MARCO_COLOR[p.r.marco];
+        if (p.r.milestone === "start" || p.r.milestone === "end") {
+          const color = MILESTONE_COLOR[p.r.milestone];
           // Mastro para cima; para baixo quando o ponto está colado no topo.
           const up = p.y - 16 >= PAD.top;
           const tip = up ? p.y - 13 : p.y + 13;
@@ -83,7 +83,7 @@ export function EvolucaoChart({ registros }: { registros: Registro[] }) {
           return (
             <g key={p.r.id}>
               <title>
-                {MARCO_LABEL[p.r.marco]} · {format(parseISO(p.r.data), "dd/MM/yyyy", { locale: ptBR })}
+                {MILESTONE_LABEL[p.r.milestone]} · {format(parseISO(p.r.date), "dd/MM/yyyy", { locale: ptBR })}
               </title>
               <line x1={p.x} y1={p.y} x2={p.x} y2={tip} stroke={color} strokeWidth={1.5} strokeLinecap="round" />
               <path d={`M${p.x},${tip} L${p.x + 7},${midOuter} L${p.x},${midInner} Z`} fill={color} />
@@ -91,7 +91,7 @@ export function EvolucaoChart({ registros }: { registros: Registro[] }) {
             </g>
           );
         }
-        if (p.r.marco === "info") {
+        if (p.r.milestone === "info") {
           return (
             <circle
               key={p.r.id}
@@ -103,7 +103,7 @@ export function EvolucaoChart({ registros }: { registros: Registro[] }) {
               strokeWidth={2}
             >
               <title>
-                Informativo · {format(parseISO(p.r.data), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}%
+                Informativo · {format(parseISO(p.r.date), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progress}%
               </title>
             </circle>
           );
@@ -114,20 +114,20 @@ export function EvolucaoChart({ registros }: { registros: Registro[] }) {
             cx={p.x}
             cy={p.y}
             r={i === n - 1 ? 5.5 : 4.5}
-            fill={saudeMeta(p.r.saude).color}
+            fill={healthMeta(p.r.health).color}
             className="stroke-background"
             strokeWidth={2}
           >
             <title>
-              {format(parseISO(p.r.data), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}% ·
-              saúde {saudeMeta(p.r.saude).nivel}/5
+              {format(parseISO(p.r.date), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progress}% ·
+              saúde {healthMeta(p.r.health).level}/5
             </title>
           </circle>
         );
       })}
 
       {/* Rótulos do eixo X */}
-      {registros.map((r, i) =>
+      {reports.map((r, i) =>
         i % step === 0 || i === n - 1 ? (
           <text
             key={r.id}
@@ -136,7 +136,7 @@ export function EvolucaoChart({ registros }: { registros: Registro[] }) {
             textAnchor="middle"
             className="fill-muted-foreground text-[13px]"
           >
-            {format(parseISO(r.data), "dd/MM", { locale: ptBR })}
+            {format(parseISO(r.date), "dd/MM", { locale: ptBR })}
           </text>
         ) : null,
       )}

@@ -1,9 +1,9 @@
 /** Cálculos puros sobre os projetos (progresso atual, tendência, agrupamentos). */
 
-import type { Projeto, ProjetoStatus, Registro } from "./types";
+import type { Project, ProjectStatus, Report } from "./types";
 
 /** Ordem lógica dos status (não alfabética). */
-export const STATUS_ORDER: ProjetoStatus[] = [
+export const STATUS_ORDER: ProjectStatus[] = [
   "in_progress",
   "testing",
   "refinement",
@@ -14,7 +14,7 @@ export const STATUS_ORDER: ProjetoStatus[] = [
 ];
 
 export const STATUS_META: Record<
-  ProjetoStatus,
+  ProjectStatus,
   { label: string; color: string; badge: "default" | "info" | "secondary" | "destructive" | "warning" | "success" }
 > = {
   discovery: { label: "Discovery", color: "#94a3b8", badge: "secondary" }, // slate
@@ -27,26 +27,26 @@ export const STATUS_META: Record<
 };
 
 /** Quarter (ex.: "2026-Q3") de uma data. */
-export function quarterDe(date: Date): string {
+export function quarterOf(date: Date): string {
   const q = Math.floor(date.getMonth() / 3) + 1;
   return `${date.getFullYear()}-Q${q}`;
 }
 
 /** Rótulo curto de um quarter ("2026-Q3" → "Q3 2026"). */
 export function quarterLabel(q: string): string {
-  const [ano, qn] = q.split("-");
-  return `${qn} ${ano}`;
+  const [year, qn] = q.split("-");
+  return `${qn} ${year}`;
 }
 
 /** Quarters presentes nos projetos + o atual, em ordem decrescente (recente primeiro). */
-export function quartersDisponiveis(projetos: Projeto[], atual: string): string[] {
-  const set = new Set(projetos.map((p) => p.quarter));
-  set.add(atual);
+export function availableQuarters(projects: Project[], current: string): string[] {
+  const set = new Set(projects.map((p) => p.quarter));
+  set.add(current);
   return [...set].sort((a, b) => b.localeCompare(a));
 }
 
 /** Rótulo de prioridade/importância por nível 1–5. */
-export const PRIORIDADE_LABEL: Record<number, string> = {
+export const PRIORITY_LABEL: Record<number, string> = {
   5: "Máxima",
   4: "Alta",
   3: "Média",
@@ -54,13 +54,13 @@ export const PRIORIDADE_LABEL: Record<number, string> = {
   1: "Mínima",
 };
 
-export function prioridadeMeta(n: number): { nivel: number; label: string } {
-  const nivel = Math.max(1, Math.min(5, Math.round(n)));
-  return { nivel, label: PRIORIDADE_LABEL[nivel] };
+export function priorityMeta(n: number): { level: number; label: string } {
+  const level = Math.max(1, Math.min(5, Math.round(n)));
+  return { level, label: PRIORITY_LABEL[level] };
 }
 
 /** Metadados de saúde (on-tracking) por nota 1–5. */
-export const SAUDE_META: Record<number, { label: string; color: string }> = {
+export const HEALTH_META: Record<number, { label: string; color: string }> = {
   5: { label: "On tracking", color: "#10b981" }, // emerald
   4: { label: "No caminho", color: "#22c55e" }, // green
   3: { label: "Atenção", color: "#f59e0b" }, // amber
@@ -69,50 +69,50 @@ export const SAUDE_META: Record<number, { label: string; color: string }> = {
 };
 
 /** Normaliza e resolve os metadados de uma nota de saúde (arredonda, clampa 1–5). */
-export function saudeMeta(n: number): { nivel: number; label: string; color: string } {
-  const nivel = Math.max(1, Math.min(5, Math.round(n)));
-  return { nivel, ...SAUDE_META[nivel] };
+export function healthMeta(n: number): { level: number; label: string; color: string } {
+  const level = Math.max(1, Math.min(5, Math.round(n)));
+  return { level, ...HEALTH_META[level] };
 }
 
 /** Registros ordenados por data (mais antigo → mais recente); desempata por criação. */
-export function registrosOrdenados(p: Projeto): Registro[] {
-  return [...p.registros].sort(
-    (a, b) => a.data.localeCompare(b.data) || a.criadoEm.localeCompare(b.criadoEm),
+export function sortedReports(p: Project): Report[] {
+  return [...p.reports].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
   );
 }
 
 /** Último registro (o "atual"), ou `undefined` se não houver nenhum. */
-export function ultimoRegistro(p: Projeto): Registro | undefined {
-  const rs = registrosOrdenados(p);
+export function lastReport(p: Project): Report | undefined {
+  const rs = sortedReports(p);
   return rs[rs.length - 1];
 }
 
 /** Progresso atual (0–100), 0 se não houver registro. */
-export function progressoAtual(p: Projeto): number {
-  return ultimoRegistro(p)?.progresso ?? 0;
+export function currentProgress(p: Project): number {
+  return lastReport(p)?.progress ?? 0;
 }
 
 /** Status ainda sem execução real — fora da conta de Progresso. */
-export const STATUS_FORA_DO_PROGRESSO: ProjetoStatus[] = ["discovery", "refinement"];
+export const STATUS_EXCLUDED_FROM_PROGRESS: ProjectStatus[] = ["discovery", "refinement"];
 
 /**
  * Se o projeto entra na conta de Progresso do panorama. Exclui os status
  * `discovery` e `refinement` (ainda não há execução), para não puxarem a
  * média para baixo com 0%.
  */
-export function contaNoProgresso(p: Projeto): boolean {
-  return !STATUS_FORA_DO_PROGRESSO.includes(p.status);
+export function countsInProgress(p: Project): boolean {
+  return !STATUS_EXCLUDED_FROM_PROGRESS.includes(p.status);
 }
 
 /**
- * Saúde atual (1–5), do último registro **real** (sem `marco`). `null` quando o
- * projeto só tem marcos (início/fim/info) — nesse caso não entra na conta de
+ * Saúde atual (1–5), do último registro **real** (sem `milestone`). `null` quando o
+ * projeto só tem marcos (start/end/info) — nesse caso não entra na conta de
  * on-tracking (média ponderada, distribuição): é filtrado, não conta como neutro.
  */
-export function saudeAtual(p: Projeto): number | null {
-  const rs = registrosOrdenados(p);
+export function currentHealth(p: Project): number | null {
+  const rs = sortedReports(p);
   for (let i = rs.length - 1; i >= 0; i--) {
-    if (!rs[i].marco) return rs[i].saude;
+    if (!rs[i].milestone) return rs[i].health;
   }
   return null;
 }
@@ -121,23 +121,23 @@ export function saudeAtual(p: Projeto): number | null {
  * Variação do progresso entre os dois últimos registros. `null` quando há
  * menos de dois registros (sem base de comparação ainda).
  */
-export function tendencia(p: Projeto): number | null {
-  // Marcos (início/fim) não são medições semanais — não contam na variação.
-  const rs = registrosOrdenados(p).filter((r) => !r.marco);
+export function trend(p: Project): number | null {
+  // Marcos (start/end) não são medições semanais — não contam na variação.
+  const rs = sortedReports(p).filter((r) => !r.milestone);
   if (rs.length < 2) return null;
-  return rs[rs.length - 1].progresso - rs[rs.length - 2].progresso;
+  return rs[rs.length - 1].progress - rs[rs.length - 2].progress;
 }
 
-export interface GrupoEngenheiro {
+export interface EngineerGroup {
   /** Chave de agrupamento: id do engenheiro (uuid), ou "sem-dono". */
   key: string;
-  nome: string;
+  name: string;
   /** `null` no grupo "sem dono". */
   avatarUrl: string | null;
-  temDono: boolean;
-  projetos: Projeto[];
+  hasOwner: boolean;
+  projects: Project[];
   /** Média do progresso atual dos projetos do engenheiro. */
-  progressoMedio: number;
+  avgProgress: number;
 }
 
 /**
@@ -145,61 +145,61 @@ export interface GrupoEngenheiro {
  * ter vários engenheiros (N:N), ele aparece em **cada** grupo dos seus engenheiros;
  * projeto sem engenheiro cai no grupo "sem-dono".
  */
-export function porEngenheiro(projetos: Projeto[]): GrupoEngenheiro[] {
-  const mapa = new Map<string, GrupoEngenheiro>();
+export function byEngineer(projects: Project[]): EngineerGroup[] {
+  const map = new Map<string, EngineerGroup>();
   const push = (
     key: string,
-    nome: string,
+    name: string,
     avatarUrl: string | null,
-    temDono: boolean,
-    p: Projeto,
+    hasOwner: boolean,
+    p: Project,
   ) => {
-    let g = mapa.get(key);
+    let g = map.get(key);
     if (!g) {
-      g = { key, nome, avatarUrl, temDono, projetos: [], progressoMedio: 0 };
-      mapa.set(key, g);
+      g = { key, name, avatarUrl, hasOwner, projects: [], avgProgress: 0 };
+      map.set(key, g);
     }
-    g.projetos.push(p);
+    g.projects.push(p);
   };
-  for (const p of projetos) {
-    if (p.engenheiros.length === 0) {
+  for (const p of projects) {
+    if (p.engineers.length === 0) {
       push("sem-dono", "Sem engenheiro", null, false, p);
     } else {
-      for (const e of p.engenheiros) push(e.id, e.nome, e.avatarUrl, true, p);
+      for (const e of p.engineers) push(e.id, e.name, e.avatarUrl, true, p);
     }
   }
-  const grupos = [...mapa.values()];
-  for (const g of grupos) {
-    g.progressoMedio = Math.round(
-      g.projetos.reduce((acc, p) => acc + progressoAtual(p), 0) / g.projetos.length,
+  const groups = [...map.values()];
+  for (const g of groups) {
+    g.avgProgress = Math.round(
+      g.projects.reduce((acc, p) => acc + currentProgress(p), 0) / g.projects.length,
     );
   }
   // Com dono primeiro (por nome), "sem dono" por último.
-  return grupos.sort((a, b) => {
-    if (a.temDono !== b.temDono) return a.temDono ? -1 : 1;
-    return a.nome.localeCompare(b.nome, "pt-BR");
+  return groups.sort((a, b) => {
+    if (a.hasOwner !== b.hasOwner) return a.hasOwner ? -1 : 1;
+    return a.name.localeCompare(b.name, "pt-BR");
   });
 }
 
 /** Média do progresso atual de uma lista de projetos (0 se vazia). */
-export function progressoMedio(projetos: Projeto[]): number {
-  if (projetos.length === 0) return 0;
+export function avgProgress(projects: Project[]): number {
+  if (projects.length === 0) return 0;
   return Math.round(
-    projetos.reduce((acc, p) => acc + progressoAtual(p), 0) / projetos.length,
+    projects.reduce((acc, p) => acc + currentProgress(p), 0) / projects.length,
   );
 }
 
 /** Soma dos pesos de prioridade (usada como denominador nas médias ponderadas). */
-function pesoTotal(projetos: Projeto[]): number {
-  return projetos.reduce((acc, p) => acc + Math.max(1, p.prioridade), 0);
+function totalWeight(projects: Project[]): number {
+  return projects.reduce((acc, p) => acc + Math.max(1, p.priority), 0);
 }
 
 /** Progresso médio ponderado pela prioridade/importância (0 se vazia). */
-export function progressoMedioPonderado(projetos: Projeto[]): number {
-  const w = pesoTotal(projetos);
+export function weightedAvgProgress(projects: Project[]): number {
+  const w = totalWeight(projects);
   if (w === 0) return 0;
   return Math.round(
-    projetos.reduce((acc, p) => acc + progressoAtual(p) * Math.max(1, p.prioridade), 0) / w,
+    projects.reduce((acc, p) => acc + currentProgress(p) * Math.max(1, p.priority), 0) / w,
   );
 }
 
@@ -207,29 +207,29 @@ export function progressoMedioPonderado(projetos: Projeto[]): number {
  * Saúde média ponderada pela prioridade (1 casa decimal; 0 se ninguém tiver
  * saúde). Projetos sem saúde (só marcos) são **ignorados** — não entram no peso.
  */
-export function saudeMediaPonderada(projetos: Projeto[]): number {
-  let soma = 0;
+export function weightedAvgHealth(projects: Project[]): number {
+  let sum = 0;
   let w = 0;
-  for (const p of projetos) {
-    const s = saudeAtual(p);
+  for (const p of projects) {
+    const s = currentHealth(p);
     if (s === null) continue;
-    const peso = Math.max(1, p.prioridade);
-    soma += s * peso;
-    w += peso;
+    const weight = Math.max(1, p.priority);
+    sum += s * weight;
+    w += weight;
   }
   if (w === 0) return 0;
-  return Math.round((soma / w) * 10) / 10;
+  return Math.round((sum / w) * 10) / 10;
 }
 
 /** Ordena projetos: status (STATUS_ORDER), depois maior progresso, depois nome. */
-export function ordenarProjetos(projetos: Projeto[]): Projeto[] {
-  return [...projetos].sort((a, b) => {
+export function sortProjects(projects: Project[]): Project[] {
+  return [...projects].sort((a, b) => {
     const sa = STATUS_ORDER.indexOf(a.status);
     const sb = STATUS_ORDER.indexOf(b.status);
     if (sa !== sb) return sa - sb;
-    const pa = progressoAtual(a);
-    const pb = progressoAtual(b);
+    const pa = currentProgress(a);
+    const pb = currentProgress(b);
     if (pa !== pb) return pb - pa;
-    return a.nome.localeCompare(b.nome, "pt-BR");
+    return a.name.localeCompare(b.name, "pt-BR");
   });
 }

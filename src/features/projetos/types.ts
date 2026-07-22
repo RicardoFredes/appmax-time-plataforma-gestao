@@ -1,6 +1,6 @@
 /** Contrato do controle de projetos (fonte: Supabase; ver `data.ts`). */
 
-export type ProjetoStatus =
+export type ProjectStatus =
   | "discovery"
   | "refinement"
   | "in_progress"
@@ -13,9 +13,9 @@ export type ProjetoStatus =
  * Engenheiro = usuário do sistema (`public.profiles` do backoffice). Identidade
  * por `id` (uuid do auth.users); nome/avatar só para exibição.
  */
-export interface Engenheiro {
+export interface Engineer {
   id: string;
-  nome: string;
+  name: string;
   avatarUrl: string | null;
 }
 
@@ -23,63 +23,66 @@ export interface Engenheiro {
 export interface Team {
   id: string;
   slug: string;
-  nome: string;
+  name: string;
 }
+
+/** Tipo de marco (app = banco, sem tradução): início/fim (bandeira) e info. */
+export type Milestone = "start" | "end" | "info";
 
 /**
  * Conteúdo de um registro de evolução (o que se escreve/edita). Reportes têm
  * **data livre** — qualquer dia, vários no mesmo dia (não são mais semanais).
  */
-export interface RegistroInput {
+export interface ReportInput {
   /** Data do reporte, `YYYY-MM-DD`. */
-  data: string;
+  date: string;
   /** Progresso acumulado, 0–100. */
-  progresso: number;
+  progress: number;
   /** Saúde do projeto: 1 (em perigo) a 5 (on tracking). Ignorada em marcos. */
-  saude: number;
+  health: number;
   /** Nota livre sobre como andou o projeto. */
-  nota: string;
+  note: string;
   /**
-   * Marco opcional — registro que **não tem saúde/on-tracking** (a `saude` é
-   * ignorada): `inicio`/`fim` demarcam o começo/término do projeto (ícone de
+   * Marco opcional — registro que **não tem saúde/on-tracking** (a `health` é
+   * ignorada): `start`/`end` demarcam o começo/término do projeto (ícone de
    * bandeira); `info` é uma atualização puramente informativa (ícone de info).
    */
-  marco?: "inicio" | "fim" | "info";
+  milestone?: Milestone;
 }
 
 /** Um registro de evolução já persistido (com `id` e momento de criação). */
-export interface Registro extends RegistroInput {
+export interface Report extends ReportInput {
   /** Identificador único (uuid do banco). */
   id: string;
   /** Momento de criação (ISO) — desempata a ordem de vários reportes no mesmo dia. */
-  criadoEm: string;
+  createdAt: string;
 }
 
-export interface Projeto {
+export interface Project {
   /** Slug estável, usado na URL de detalhe (`#/projetos/<id>`). */
   id: string;
   /** Código curto de exibição (ex.: "P01"). */
-  codigo: string;
-  nome: string;
+  code: string;
+  name: string;
   /** Engenheiros do projeto (N:N, todos iguais). Vazio = sem dono. */
-  engenheiros: Engenheiro[];
+  engineers: Engineer[];
   /** Data de início `YYYY-MM-DD`, ou `null`. */
-  inicio: string | null;
+  startDate: string | null;
   /** Previsão de término `YYYY-MM-DD`, ou `null` se sem data definida. */
-  prazo: string | null;
+  dueDate: string | null;
   /** Data de fechamento real `YYYY-MM-DD`, ou `null` enquanto aberto. */
-  fechamento: string | null;
-  status: ProjetoStatus;
+  closedDate: string | null;
+  status: ProjectStatus;
   /** Time dono do projeto (`teams.id`), ou `null` se sem time. */
   teamId: string | null;
   /** Importância/prioridade: 1 (mínima) a 5 (máxima). Peso nas métricas gerais. */
-  prioridade: number;
+  priority: number;
   /** Quarter ao qual o projeto pertence, ex.: "2026-Q3". */
   quarter: string;
-  descricao: string;
-  registros: Registro[];
+  description: string;
+  reports: Report[];
 }
 
-export interface ProjetosData {
-  projetos: Projeto[];
+export interface ProjectsData {
+  projects: Project[];
 }
