@@ -133,6 +133,7 @@ one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm 
 - Ao passar `"$VAR:sufixo"` no zsh, escape com `"${VAR}:sufixo"` (`:a` é modificador).
 
 ## Documentação (`docs/`)
+- [architecture.md](docs/architecture.md) — padrões de arquitetura, camadas, naming, file size (≤300), imports, idioma e anti-padrões.
 - [overview.md](docs/overview.md) — propósito, stack, estrutura, comandos.
 - [data-pipeline.md](docs/data-pipeline.md) — `core.ts`/`buildTasksData`, sync, urgência, seed, escala de sustentação, contrato.
 - [frontend.md](docs/frontend.md) — painel, abas, filtros, sort, status, página de sustentação.
