@@ -32,6 +32,7 @@ import {
 import { Priority } from "./Priority";
 import { FreeText } from "./Linkify";
 import { Delta, HealthBadge, MILESTONE_META } from "./project-detail-parts";
+import { DescriptionEditor, EngineersPicker, StatusPicker } from "./project-detail-edit";
 import type { Project } from "./types";
 
 export function ProjectDetail({
@@ -43,6 +44,7 @@ export function ProjectDetail({
   onDelete,
   onEditReport,
   onDeleteReport,
+  onUpdated,
 }: {
   project: Project;
   onBack: () => void;
@@ -55,6 +57,8 @@ export function ProjectDetail({
   onEditReport?: (id: string) => void;
   /** Apaga um registro específico (recebe o `id`). */
   onDeleteReport?: (id: string) => void;
+  /** Chamado após uma edição rápida em tela (status, engenheiros, descrição). */
+  onUpdated?: () => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const rs = useMemo(() => sortedReports(project), [project]);
@@ -107,7 +111,11 @@ export function ProjectDetail({
         </div>
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground">{project.code}</span>
-          <Badge variant={meta.badge}>{meta.label}</Badge>
+          {canEdit && onUpdated ? (
+            <StatusPicker project={project} onSaved={onUpdated} />
+          ) : (
+            <Badge variant={meta.badge}>{meta.label}</Badge>
+          )}
           <Priority level={project.priority} showLabel />
           <Badge variant="outline" className="font-mono">
             {quarterLabel(project.quarter)}
@@ -115,12 +123,16 @@ export function ProjectDetail({
         </div>
         <h1 className="text-xl font-bold tracking-tight">{project.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <UserRound className="h-3.5 w-3.5" />
-            {project.engineers.length > 0
-              ? project.engineers.map((e) => e.name).join(", ")
-              : "Sem engenheiro"}
-          </span>
+          {canEdit && onUpdated ? (
+            <EngineersPicker project={project} onSaved={onUpdated} />
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <UserRound className="h-3.5 w-3.5" />
+              {project.engineers.length > 0
+                ? project.engineers.map((e) => e.name).join(", ")
+                : "Sem engenheiro"}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
             Início:{" "}
@@ -141,7 +153,11 @@ export function ProjectDetail({
             <span className="font-medium text-foreground">{fmtDate(project.closedDate)}</span>
           </span>
         </div>
-        {project.description && <FreeText text={project.description} className="mt-4 max-w-2xl" />}
+        {canEdit && onUpdated ? (
+          <DescriptionEditor project={project} onSaved={onUpdated} className="mt-4" />
+        ) : (
+          project.description && <FreeText text={project.description} className="mt-4 max-w-2xl" />
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -186,6 +186,7 @@ export function ProjectsPage({ sustentacao }: { sustentacao?: SustentacaoData })
         onDelete={() => removeProject(openProject)}
         onEditReport={(regId) => setReporting({ project: openProject, reportId: regId })}
         onDeleteReport={(regId) => removeReport(openProject, regId)}
+        onUpdated={refetch}
       />
     ) : (
       <div className="space-y-4">
