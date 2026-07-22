@@ -35,7 +35,7 @@ function loadEnvFile(): void {
 }
 
 interface RawRegistro {
-  semana: string;
+  data: string;
   progresso: number;
   saude: number;
   nota: string;
@@ -171,7 +171,7 @@ async function main(): Promise<void> {
   const registros = projetos.flatMap((p) =>
     p.registros.map((r) => ({
       project_id: p.id,
-      week: r.semana,
+      date: r.data,
       progress: r.progresso,
       health: r.saude,
       note: r.nota ?? "",
@@ -180,11 +180,7 @@ async function main(): Promise<void> {
   );
   if (registros.length) {
     check(
-      (
-        await supabase
-          .from("weekly_reports")
-          .upsert(registros, { onConflict: "project_id,week" })
-      ).error,
+      (await supabase.from("weekly_reports").insert(registros)).error,
       "weekly_reports",
     );
   }

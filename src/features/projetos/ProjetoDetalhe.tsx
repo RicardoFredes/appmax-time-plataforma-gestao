@@ -100,14 +100,15 @@ export function ProjetoDetalhe({
   onReportar?: () => void;
   /** Apaga o projeto inteiro. */
   onApagar?: () => void;
-  /** Edita o registro de uma semana específica (recebe a chave `semana`). */
-  onEditarRegistro?: (semana: string) => void;
-  /** Apaga o registro de uma semana específica (recebe a chave `semana`). */
-  onApagarRegistro?: (semana: string) => void;
+  /** Edita um registro específico (recebe o `id`). */
+  onEditarRegistro?: (id: string) => void;
+  /** Apaga um registro específico (recebe o `id`). */
+  onApagarRegistro?: (id: string) => void;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const rs = useMemo(() => registrosOrdenados(projeto), [projeto]);
-  const desc = [...rs].reverse();
+  // Gráfico usa `rs` (cronológico); histórico mostra do mais recente ao mais antigo.
+  const desc = useMemo(() => [...rs].reverse(), [rs]);
   const meta = STATUS_META[projeto.status];
   const atual = progressoAtual(projeto);
   const trend = tendencia(projeto);
@@ -252,11 +253,12 @@ export function ProjetoDetalhe({
           <div className="flex-1 divide-y overflow-y-auto">
             {desc.map((r, i) => {
               const m = r.marco ? MARCO_META[r.marco] : null;
-              // Delta semana-a-semana ignora marcos (não são medições).
+              // Delta ignora marcos (não são medições). Lista em ordem decrescente
+              // (mais recente → mais antigo): o registro anterior vem depois de `i`.
               const anterior = m ? undefined : desc.slice(i + 1).find((x) => !x.marco);
               const delta = anterior ? r.progresso - anterior.progresso : null;
               return (
-                <div key={r.semana} className="group p-4">
+                <div key={r.id} className="group p-4">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="inline-flex items-center gap-1.5 text-sm font-medium">
                       {m ? (
@@ -264,7 +266,7 @@ export function ProjetoDetalhe({
                       ) : (
                         <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
-                      {format(parseISO(r.semana), "dd MMM yyyy", { locale: ptBR })}
+                      {format(parseISO(r.data), "dd MMM yyyy", { locale: ptBR })}
                     </span>
                     <span className="text-sm font-semibold tabular-nums">{r.progresso}%</span>
                     {delta !== null && <Delta value={delta} />}
@@ -284,7 +286,7 @@ export function ProjetoDetalhe({
                             size="icon"
                             className="h-7 w-7 text-muted-foreground"
                             title="Editar este registro"
-                            onClick={() => onEditarRegistro(r.semana)}
+                            onClick={() => onEditarRegistro(r.id)}
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -295,7 +297,7 @@ export function ProjetoDetalhe({
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
                             title="Apagar este registro"
-                            onClick={() => onApagarRegistro(r.semana)}
+                            onClick={() => onApagarRegistro(r.id)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>

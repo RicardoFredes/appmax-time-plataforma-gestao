@@ -28,14 +28,15 @@ teams ──1:N──> team_members ─→ profiles(user)
 - **`project_engineers`** — junção N:N projeto ↔ usuário; os engenheiros do projeto
   (subconjunto dos membros do time). Sem linhas = projeto sem dono.
 - **`weekly_reports`** — o array `registros[]` embutido, virado filhos 1:N (inclui
-  `milestone`). O progresso/saúde/nota "atuais" são o registro de maior `week`.
+  `milestone`). O progresso/saúde/nota "atuais" são o registro mais recente (`date`,
+  desempatado por `created_at`).
 
 ## Tabelas
 
 > **Referências a `public.profiles`** (tabela do backoffice: `id uuid`, `name`,
 > `avatar_url`, mantida por trigger a partir de `auth.users`). Mapa PT↔EN em `data.ts`:
 > `Projeto.engenheiros[]` ← `project_engineers → profiles`; `Team` ← `teams`;
-> `RegistroSemanal.marco` (`inicio`/`fim`/`info`) ↔ `weekly_reports.milestone`
+> `Registro.marco` (`inicio`/`fim`/`info`) ↔ `weekly_reports.milestone`
 > (`start`/`end`/`info`).
 
 ```sql
@@ -72,15 +73,19 @@ CREATE TABLE project_engineers (
 );
 
 CREATE TABLE weekly_reports (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  week       DATE NOT NULL,           -- segunda-feira da semana
+  date       DATE NOT NULL,           -- data livre do reporte (qualquer dia)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),  -- desempata reportes do mesmo dia
   progress   SMALLINT NOT NULL CHECK (progress BETWEEN 0 AND 100),
   health     SMALLINT NOT NULL CHECK (health BETWEEN 1 AND 5),
   note       TEXT NOT NULL DEFAULT '',
-  milestone  TEXT CHECK (milestone IN ('start','end','info')),  -- nullable; ignora health
-  PRIMARY KEY (project_id, week)      -- 1 registro por projeto/semana
+  milestone  TEXT CHECK (milestone IN ('start','end','info'))  -- nullable; ignora health
 );
 ```
+
+> Reportes têm **data livre** e podem ter **vários no mesmo dia** — a evolução para o
+> modelo semanal (PK `(project_id, week)`) está em `20260722_reports_any_date.sql`.
 
 ## Consultas típicas
 
@@ -89,7 +94,7 @@ Estado "atual" de cada projeto (o último registro, o que a UI mostra na lista):
 ```sql
 SELECT DISTINCT ON (project_id) *
 FROM weekly_reports
-ORDER BY project_id, week DESC;
+ORDER BY project_id, date DESC, created_at DESC;
 ```
 
 Projetos do quarter corrente (a visão principal filtra pelo quarter do relógio):
@@ -107,7 +112,7 @@ SELECT * FROM projects WHERE quarter = '2026-Q3';
 | Eng. do projeto | `project_engineers` (N:N, subconjunto do time) | vários por projeto; pessoas diferentes por projeto |
 | Acesso | RLS `authenticated` (leitura e escrita) | `profiles` é authenticated-only; mesma postura do backoffice |
 | `status`/`priority`/`health` | `CHECK` inline | enums fechados e pequenos |
-| `weekly_reports` | tabela filha, PK `(project,week)` | 1:N natural; PK aplica "1 por semana" |
+| `weekly_reports` | tabela filha, PK `id` (uuid); `date` livre + `created_at` | reportes por data livre, vários por dia; ordena por `(date, created_at)` |
 | Datas | `DATE` nullable | `start_date`/`due_date`/`closed_date` já são opcionais |
 
 ## Se crescer

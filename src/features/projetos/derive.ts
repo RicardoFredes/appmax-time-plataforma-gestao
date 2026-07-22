@@ -1,6 +1,6 @@
 /** Cálculos puros sobre os projetos (progresso atual, tendência, agrupamentos). */
 
-import type { Projeto, ProjetoStatus, RegistroSemanal } from "./types";
+import type { Projeto, ProjetoStatus, Registro } from "./types";
 
 /** Ordem lógica dos status (não alfabética). */
 export const STATUS_ORDER: ProjetoStatus[] = [
@@ -74,13 +74,15 @@ export function saudeMeta(n: number): { nivel: number; label: string; color: str
   return { nivel, ...SAUDE_META[nivel] };
 }
 
-/** Registros ordenados por semana (mais antigo → mais recente). */
-export function registrosOrdenados(p: Projeto): RegistroSemanal[] {
-  return [...p.registros].sort((a, b) => a.semana.localeCompare(b.semana));
+/** Registros ordenados por data (mais antigo → mais recente); desempata por criação. */
+export function registrosOrdenados(p: Projeto): Registro[] {
+  return [...p.registros].sort(
+    (a, b) => a.data.localeCompare(b.data) || a.criadoEm.localeCompare(b.criadoEm),
+  );
 }
 
 /** Último registro (o "atual"), ou `undefined` se não houver nenhum. */
-export function ultimoRegistro(p: Projeto): RegistroSemanal | undefined {
+export function ultimoRegistro(p: Projeto): Registro | undefined {
   const rs = registrosOrdenados(p);
   return rs[rs.length - 1];
 }

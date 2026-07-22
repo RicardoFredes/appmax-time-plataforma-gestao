@@ -425,10 +425,10 @@ function buildReport(
   secoes: Secao[],
   duty: ReturnType<typeof dutyResumo>,
   m: Metricas,
-  semana: string | null,
+  data: string | null,
 ): string {
   const L: string[] = ["Relatório de projetos — Time Plataforma"];
-  if (semana) L.push(`Semana de ${format(parseISO(semana), "dd/MM/yyyy", { locale: ptBR })}`);
+  if (data) L.push(`Atualizado em ${format(parseISO(data), "dd/MM/yyyy", { locale: ptBR })}`);
   L.push("");
 
   L.push("Panorama (ponderado pela importância):");
@@ -588,7 +588,7 @@ function Relatorio({
   onOpen,
 }: {
   projetos: Projeto[];
-  stats: { total: number; emAndamento: number; concluidos: number; semana: string | null };
+  stats: { total: number; emAndamento: number; concluidos: number; data: string | null };
   sustentacao: SustentacaoData | undefined;
   dim: Dimensao;
   onDimChange: (dim: Dimensao) => void;
@@ -603,8 +603,8 @@ function Relatorio({
     [projetos, dim],
   );
   const texto = useMemo(
-    () => buildReport(secoes, duty, metricas, stats.semana),
-    [secoes, duty, metricas, stats.semana],
+    () => buildReport(secoes, duty, metricas, stats.data),
+    [secoes, duty, metricas, stats.data],
   );
 
   const copy = async () => {
@@ -619,8 +619,8 @@ function Relatorio({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           Panorama e status por projeto
-          {stats.semana && (
-            <> · semana de {format(parseISO(stats.semana), "dd MMM yyyy", { locale: ptBR })}</>
+          {stats.data && (
+            <> · atualizado em {format(parseISO(stats.data), "dd MMM yyyy", { locale: ptBR })}</>
           )}
           .
         </p>
@@ -817,8 +817,8 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
   // Dialogs de CRUD.
   const [novoOpen, setNovoOpen] = useState(false);
   const [editar, setEditar] = useState<Projeto | null>(null);
-  // `reportar` = reportar/editar registro; `semana` presente → edita aquela semana.
-  const [reportar, setReportar] = useState<{ projeto: Projeto; semana?: string } | null>(null);
+  // `reportar` = novo reporte / edição; `registroId` presente → edita aquele registro.
+  const [reportar, setReportar] = useState<{ projeto: Projeto; registroId?: string } | null>(null);
 
   // Quarter atual pelo relógio do cliente; a visão principal começa nele.
   const quarterAtual = useMemo(() => quarterDe(new Date()), []);
@@ -867,15 +867,16 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
       (p) => p.status === "in_progress" || p.status === "testing",
     ).length;
     const concluidos = projetos.filter((p) => p.status === "done").length;
-    const semana =
+    // Data do reporte mais recente entre os projetos (referência do relatório).
+    const data =
       projetos
-        .flatMap((p) => p.registros.map((r) => r.semana))
+        .flatMap((p) => p.registros.map((r) => r.data))
         .sort((a, b) => b.localeCompare(a))[0] ?? null;
     return {
       total: projetos.length,
       emAndamento,
       concluidos,
-      semana,
+      data,
     };
   }, [projetos]);
 
@@ -921,17 +922,19 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
     }
   };
 
-  // Apaga um registro semanal (confirma antes; recarrega ao concluir).
-  const apagarRegistro = async (projeto: Projeto, semana: string) => {
+  // Apaga um registro (confirma antes; recarrega ao concluir).
+  const apagarRegistro = async (projeto: Projeto, registroId: string) => {
+    const reg = projeto.registros.find((r) => r.id === registroId);
+    const quando = reg ? format(parseISO(reg.data), "dd/MM/yyyy", { locale: ptBR }) : "";
     const ok = await confirm({
       title: "Apagar registro?",
-      description: `O registro da semana de ${semana} será removido.`,
+      description: `O registro${quando ? ` de ${quando}` : ""} será removido.`,
       confirmLabel: "Apagar",
       destructive: true,
     });
     if (!ok) return;
     try {
-      await deleteRegistro(projeto.id, semana);
+      await deleteRegistro(registroId);
       refetch();
     } catch (e) {
       await confirm({
@@ -969,7 +972,7 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
           open
           onOpenChange={(v) => !v && setReportar(null)}
           projeto={reportar.projeto}
-          semana={reportar.semana}
+          registroId={reportar.registroId}
           onSaved={refetch}
         />
       )}
@@ -985,8 +988,8 @@ export function ProjetosPage({ sustentacao }: { sustentacao?: SustentacaoData })
         onEditar={() => setEditar(projetoAberto)}
         onReportar={() => setReportar({ projeto: projetoAberto })}
         onApagar={() => apagarProjeto(projetoAberto)}
-        onEditarRegistro={(semana) => setReportar({ projeto: projetoAberto, semana })}
-        onApagarRegistro={(semana) => apagarRegistro(projetoAberto, semana)}
+        onEditarRegistro={(regId) => setReportar({ projeto: projetoAberto, registroId: regId })}
+        onApagarRegistro={(regId) => apagarRegistro(projetoAberto, regId)}
       />
     ) : (
       <div className="space-y-4">

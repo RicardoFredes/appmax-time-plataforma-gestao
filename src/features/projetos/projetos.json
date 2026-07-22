@@ -15,7 +15,7 @@
       "quarter": "2026-Q3",
       "descricao": "Aguardando ajustes de UX para começar",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 5, "saude": 3, "nota": "Aguardando ajustes de UX para começar." }
+        { "data": "2026-07-20", "progresso": 5, "saude": 3, "nota": "Aguardando ajustes de UX para começar." }
       ]
     },
     {
@@ -32,8 +32,8 @@
       "quarter": "2026-Q3",
       "descricao": "Fase 1: ajustes na UX. Fase 2: integração com as APIs.",
       "registros": [
-        { "semana": "2026-07-17", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 5, "saude": 4, "nota": "Witer começou a integrar as APIs." }
+        { "data": "2026-07-17", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
+        { "data": "2026-07-20", "progresso": 5, "saude": 4, "nota": "Witer começou a integrar as APIs." }
       ]
     },
     {
@@ -50,7 +50,7 @@
       "quarter": "2026-Q3",
       "descricao": "Regulatório.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 50, "saude": 1, "nota": "Aguardando o desenvolvimento de APIs do backend para integrar. Frontend pronto." }
+        { "data": "2026-07-20", "progresso": 50, "saude": 1, "nota": "Aguardando o desenvolvimento de APIs do backend para integrar. Frontend pronto." }
       ]
     },
     {
@@ -67,8 +67,8 @@
       "quarter": "2026-Q3",
       "descricao": "Migração de contas.",
       "registros": [
-        { "semana": "2026-07-10", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 90, "saude": 5, "nota": "Felipe assumiu e está integrando as APIs." }
+        { "data": "2026-07-10", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
+        { "data": "2026-07-20", "progresso": 90, "saude": 5, "nota": "Felipe assumiu e está integrando as APIs." }
       ]
     },
     {
@@ -85,7 +85,7 @@
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de refinamento. https://tecnologia-appmax.atlassian.net/wiki/spaces/PEPT/pages/2557673478/Proposta+Cross+Servi+o+de+Valida+o+Facial",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 3, "saude": 3, "nota": "O primeiro estudo já foi feito pelo time: em resumo não é possível intercambiar entre serviços terceiros de validação facial sem que solicitar onboarding do usuário em ambos os serviços. O próximo passo é detalhar o escopo do projeto e cronograma.", "marco": "info" }
+        { "data": "2026-07-20", "progresso": 3, "saude": 3, "nota": "O primeiro estudo já foi feito pelo time: em resumo não é possível intercambiar entre serviços terceiros de validação facial sem que solicitar onboarding do usuário em ambos os serviços. O próximo passo é detalhar o escopo do projeto e cronograma.", "marco": "info" }
       ]
     },
     {
@@ -102,7 +102,7 @@
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de refinamento. https://tecnologia-appmax.atlassian.net/wiki/spaces/PEPT/pages/2592768001/Backoffice+Max+Onboarding",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
       ]
     },
     {
@@ -119,7 +119,7 @@
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de refinamento. https://tecnologia-appmax.atlassian.net/wiki/spaces/PEPT/pages/2593161217/Backoffice+Max+Conta+e+Transa+es",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de refinamento." }
       ]
     },
     {
@@ -136,7 +136,7 @@
       "quarter": "2026-Q3",
       "descricao": "Frontend do aplicativo da Appmax; algumas entregas serão feitas antes.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 80, "saude": 2, "nota": "Projeto está evoluindo um pouco mais lento, e ainda tem alguns ajustes necessários, sinalizados pela direção: adicionar a funcionalidade de calculadora não mapeada anteriormente; débito deve entrar obrigatoriamente (estava mapeado entregar primeiro crédito e algumas semanas depois o débito). Também tivemos um interesse do time de design em revisar as telas e jornadas do frontend, o que pode ocasionar atrasos. Ainda temos pendências para definição das taxas e seleção dos parceiros beta testers. " }
+        { "data": "2026-07-20", "progresso": 80, "saude": 2, "nota": "Projeto está evoluindo um pouco mais lento, e ainda tem alguns ajustes necessários, sinalizados pela direção: adicionar a funcionalidade de calculadora não mapeada anteriormente; débito deve entrar obrigatoriamente (estava mapeado entregar primeiro crédito e algumas semanas depois o débito). Também tivemos um interesse do time de design em revisar as telas e jornadas do frontend, o que pode ocasionar atrasos. Ainda temos pendências para definição das taxas e seleção dos parceiros beta testers. " }
       ]
     },
     {
@@ -153,8 +153,8 @@
       "quarter": "2026-Q3",
       "descricao": "Novo Design System para o aplicativo",
       "registros": [
-        { "semana": "2026-06-26", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 95, "saude": 5, "nota": "Após revisão da Home e ajustes finos, estamos com tudo pronto e com expectativa de lançamento nas lojas para essa quarta (22/07)." }
+        { "data": "2026-06-26", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
+        { "data": "2026-07-20", "progresso": 95, "saude": 5, "nota": "Após revisão da Home e ajustes finos, estamos com tudo pronto e com expectativa de lançamento nas lojas para essa quarta (22/07)." }
       ]
     },
     {
@@ -171,8 +171,8 @@
       "quarter": "2026-Q3",
       "descricao": "Aplicação do novo DS e melhorias de jornadas.",
       "registros": [
-        { "semana": "2026-06-26", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 30, "saude": 5, "nota": "Já estão com a nova UI/UX: configurações, Área Pix e suas jornadas, Chat, Limites, Fazer Pix, Boletos. Também entrou o Indicar Amigos, pois o Ian implementou a API no backend " }
+        { "data": "2026-06-26", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
+        { "data": "2026-07-20", "progresso": 30, "saude": 5, "nota": "Já estão com a nova UI/UX: configurações, Área Pix e suas jornadas, Chat, Limites, Fazer Pix, Boletos. Também entrou o Indicar Amigos, pois o Ian implementou a API no backend " }
       ]
     },
     {
@@ -189,8 +189,8 @@
       "quarter": "2026-Q3",
       "descricao": "Em fase de testes e ajustes. O prazo depende dos testes e da disponibilidade do cartão de crédito.",
       "registros": [
-        { "semana": "2026-05-04", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 95, "saude": 4, "nota": "Aguardando o time de Risco finalizar os testes em ambiente de homologação. Ainda falta o time de SRE provisionar o BFF de produção" }
+        { "data": "2026-05-04", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
+        { "data": "2026-07-20", "progresso": 95, "saude": 4, "nota": "Aguardando o time de Risco finalizar os testes em ambiente de homologação. Ainda falta o time de SRE provisionar o BFF de produção" }
       ]
     },
     {
@@ -207,7 +207,7 @@
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de discovery.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
       ]
     },
     {
@@ -224,7 +224,7 @@
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de discovery.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Nessa semana o time de Risco trouxe alguns detalhamentos para as suas necessidades, como fugiam do escopo da unificação, criamos um nova iniciativa para discorvery: Raio X do parceiro." }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Nessa semana o time de Risco trouxe alguns detalhamentos para as suas necessidades, como fugiam do escopo da unificação, criamos um nova iniciativa para discorvery: Raio X do parceiro." }
       ]
     },
     {
@@ -241,7 +241,7 @@
       "quarter": "2026-Q3",
       "descricao": "Ainda em fase de discovery.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "Ainda em fase de discovery." }
       ]
     },
     {
@@ -258,7 +258,7 @@
       "quarter": "2026-Q3",
       "descricao": "Em fase de testes e ajustes.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 95, "saude": 5, "nota": "Segue aguardando os testes do time de produto" }
+        { "data": "2026-07-20", "progresso": 95, "saude": 5, "nota": "Segue aguardando os testes do time de produto" }
       ]
     },
     {
@@ -275,8 +275,8 @@
       "quarter": "2026-Q3",
       "descricao": "Pedidos e estornos, Configurações.",
       "registros": [
-        { "semana": "2026-07-02", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
-        { "semana": "2026-07-20", "progresso": 85, "saude": 4, "nota": "Boa parte já foi entregue, mas duas tarefas ainda estão em aberto: status de estornos (time de produto está revisando); equipe produtor (falta testes)." }
+        { "data": "2026-07-02", "progresso": 0, "saude": 3, "nota": "", "marco": "inicio" },
+        { "data": "2026-07-20", "progresso": 85, "saude": 4, "nota": "Boa parte já foi entregue, mas duas tarefas ainda estão em aberto: status de estornos (time de produto está revisando); equipe produtor (falta testes)." }
       ]
     },
     {
@@ -293,7 +293,7 @@
       "quarter": "2026-Q3",
       "descricao": "Saque e contas bancárias. O prazo pode mudar, pois depende do refinamento de produto.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "O time de produto já refinou a maioria das tarefas, estou aguardando o time ficar mais livre para iniciar o desenvolvimento." }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "O time de produto já refinou a maioria das tarefas, estou aguardando o time ficar mais livre para iniciar o desenvolvimento." }
       ]
     },
     {
@@ -310,7 +310,7 @@
       "quarter": "2026-Q3",
       "descricao": "Migração de Tickets para Vue 3.",
       "registros": [
-        { "semana": "2026-07-14", "progresso": 100, "saude": 3, "nota": "Finalizado.", "marco": "fim" }
+        { "data": "2026-07-14", "progresso": 100, "saude": 3, "nota": "Finalizado.", "marco": "fim" }
       ]
     },
     {
@@ -327,7 +327,7 @@
       "quarter": "2026-Q4",
       "descricao": "Migração de Estornos para Vue 3.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
       ]
     },
     {
@@ -344,7 +344,7 @@
       "quarter": "2026-Q4",
       "descricao": "Após o deploy em produção, implementar nos Clients.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
       ]
     },
     {
@@ -361,7 +361,7 @@
       "quarter": "2026-Q4",
       "descricao": "Fase 1: provisionamento de ambiente. Fase 2: base comum. Fase 3: módulo piloto CRM.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
       ]
     },
     {
@@ -378,7 +378,7 @@
       "quarter": "2026-Q4",
       "descricao": "Apartar o frontend do IB.",
       "registros": [
-        { "semana": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
+        { "data": "2026-07-20", "progresso": 0, "saude": 3, "nota": "" }
       ]
     }
   ]

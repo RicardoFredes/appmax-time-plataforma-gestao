@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { saudeMeta } from "./derive";
-import type { RegistroSemanal } from "./types";
+import type { Registro } from "./types";
 
 const ACCENT = "#9b6afa"; // roxo Appmax
 const MARCO_COLOR = { inicio: "#9b6afa", fim: "#10b981" } as const; // roxo / emerald
@@ -15,7 +15,7 @@ const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
 /** Gráfico de linha da evolução do progresso (%), com pontos coloridos pela saúde. */
-export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
+export function EvolucaoChart({ registros }: { registros: Registro[] }) {
   if (registros.length === 0) return null;
 
   const n = registros.length;
@@ -81,9 +81,9 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
           const midOuter = up ? p.y - 10.5 : p.y + 10.5;
           const midInner = up ? p.y - 8 : p.y + 8;
           return (
-            <g key={p.r.semana}>
+            <g key={p.r.id}>
               <title>
-                {MARCO_LABEL[p.r.marco]} · {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })}
+                {MARCO_LABEL[p.r.marco]} · {format(parseISO(p.r.data), "dd/MM/yyyy", { locale: ptBR })}
               </title>
               <line x1={p.x} y1={p.y} x2={p.x} y2={tip} stroke={color} strokeWidth={1.5} strokeLinecap="round" />
               <path d={`M${p.x},${tip} L${p.x + 7},${midOuter} L${p.x},${midInner} Z`} fill={color} />
@@ -94,7 +94,7 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
         if (p.r.marco === "info") {
           return (
             <circle
-              key={p.r.semana}
+              key={p.r.id}
               cx={p.x}
               cy={p.y}
               r={4.5}
@@ -103,14 +103,14 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
               strokeWidth={2}
             >
               <title>
-                Informativo · {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}%
+                Informativo · {format(parseISO(p.r.data), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}%
               </title>
             </circle>
           );
         }
         return (
           <circle
-            key={p.r.semana}
+            key={p.r.id}
             cx={p.x}
             cy={p.y}
             r={i === n - 1 ? 5.5 : 4.5}
@@ -119,7 +119,7 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
             strokeWidth={2}
           >
             <title>
-              {format(parseISO(p.r.semana), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}% ·
+              {format(parseISO(p.r.data), "dd/MM/yyyy", { locale: ptBR })} · {p.r.progresso}% ·
               saúde {saudeMeta(p.r.saude).nivel}/5
             </title>
           </circle>
@@ -130,13 +130,13 @@ export function EvolucaoChart({ registros }: { registros: RegistroSemanal[] }) {
       {registros.map((r, i) =>
         i % step === 0 || i === n - 1 ? (
           <text
-            key={r.semana}
+            key={r.id}
             x={x(i)}
             y={H - 10}
             textAnchor="middle"
             className="fill-muted-foreground text-[13px]"
           >
-            {format(parseISO(r.semana), "dd/MM", { locale: ptBR })}
+            {format(parseISO(r.data), "dd/MM", { locale: ptBR })}
           </text>
         ) : null,
       )}

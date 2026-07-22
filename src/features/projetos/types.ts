@@ -26,15 +26,18 @@ export interface Team {
   nome: string;
 }
 
-/** Um registro semanal de evolução (adicionado toda semana à mão). */
-export interface RegistroSemanal {
-  /** Segunda-feira da semana, `YYYY-MM-DD`. */
-  semana: string;
+/**
+ * Conteúdo de um registro de evolução (o que se escreve/edita). Reportes têm
+ * **data livre** — qualquer dia, vários no mesmo dia (não são mais semanais).
+ */
+export interface RegistroInput {
+  /** Data do reporte, `YYYY-MM-DD`. */
+  data: string;
   /** Progresso acumulado, 0–100. */
   progresso: number;
   /** Saúde do projeto: 1 (em perigo) a 5 (on tracking). Ignorada em marcos. */
   saude: number;
-  /** Nota livre sobre como andou o projeto na semana. */
+  /** Nota livre sobre como andou o projeto. */
   nota: string;
   /**
    * Marco opcional — registro que **não tem saúde/on-tracking** (a `saude` é
@@ -42,6 +45,14 @@ export interface RegistroSemanal {
    * bandeira); `info` é uma atualização puramente informativa (ícone de info).
    */
   marco?: "inicio" | "fim" | "info";
+}
+
+/** Um registro de evolução já persistido (com `id` e momento de criação). */
+export interface Registro extends RegistroInput {
+  /** Identificador único (uuid do banco). */
+  id: string;
+  /** Momento de criação (ISO) — desempata a ordem de vários reportes no mesmo dia. */
+  criadoEm: string;
 }
 
 export interface Projeto {
@@ -66,7 +77,7 @@ export interface Projeto {
   /** Quarter ao qual o projeto pertence, ex.: "2026-Q3". */
   quarter: string;
   descricao: string;
-  registros: RegistroSemanal[];
+  registros: Registro[];
 }
 
 export interface ProjetosData {

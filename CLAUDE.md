@@ -89,8 +89,12 @@ one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm 
   (`project_engineers`). `data.ts` remonta o `ProjetosData` e `useProjetosData.ts` faz o fetch
   com **realtime** (muda tabela → refaz a lista; também refaz em `SIGNED_IN`). Na visão "por
   engenheiro" o projeto aparece sob cada engenheiro (`derive.porEngenheiro` faz fan-out).
-  Registro semanal = `{ semana, progresso (0–100 acumulado), saude (1…5), nota, marco? }`;
-  PK `(project, week)` aplica "1 por semana" (edit-in-place). `marco`
+  Registro = `{ id, data, criadoEm, progresso (0–100 acumulado), saude (1…5), nota, marco? }`
+  (no banco `weekly_reports`: `id` uuid PK, `date`, `created_at`). Reportes têm **data
+  livre** — qualquer dia, **vários por dia**; ordenados por `(data, criadoEm)`. Criar =
+  insert; editar/apagar por `id` (`criarRegistro`/`atualizarRegistro`/`deleteRegistro`).
+  Migração que trocou o modelo semanal (PK `(project,week)`) pelo de data livre:
+  `supabase/migrations/20260722_reports_any_date.sql`. `marco`
   (`inicio`/`fim`/`info`, no banco `milestone` `start`/`end`/`info`) **ignora saúde**:
   `inicio`/`fim` = bandeira, `info` = ícone de info (círculo vazado no gráfico).
   Progresso/saúde/nota "atuais" = último registro. Cada projeto tem `id` (slug da URL

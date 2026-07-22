@@ -5,7 +5,7 @@
  *
  * O **banco é em inglês** (tabelas/colunas: `teams`, `team_members`, `projects`,
  * `project_engineers`, `weekly_reports`); os tipos do app são em português
- * (`Projeto`, `Engenheiro`, `Team`, `RegistroSemanal`). A tradução PT↔EN vive só
+ * (`Projeto`, `Engenheiro`, `Team`, `Registro`). A tradução PT↔EN vive só
  * aqui, na fronteira. `fetchProjetos` remonta o `ProjetosData` que a UI já consome.
  */
 import { supabase } from "@/lib/supabase";
@@ -14,14 +14,15 @@ import type {
   Projeto,
   ProjetoStatus,
   ProjetosData,
-  RegistroSemanal,
+  Registro,
+  RegistroInput,
   Team,
 } from "./types";
 
 /** Campos de topo do projeto (sem engenheiros/registros, que são tabelas à parte). */
 export type ProjetoMeta = Omit<Projeto, "engenheiros" | "registros">;
 
-type Marco = NonNullable<RegistroSemanal["marco"]>;
+type Marco = NonNullable<Registro["marco"]>;
 /** marco (app, pt) ↔ milestone (banco, en). */
 const MARCO_TO_DB: Record<Marco, string> = { inicio: "start", fim: "end", info: "info" };
 const MARCO_FROM_DB: Record<string, Marco> = { start: "inicio", end: "fim", info: "info" };
@@ -40,7 +41,7 @@ const SELECT =
   "id, code, name, description, status, priority, quarter, team_id," +
   " start_date, due_date, closed_date," +
   " project_engineers(profiles(id, name, avatar_url))," +
-  " weekly_reports(week, progress, health, note, milestone)";
+  " weekly_reports(id, date, created_at, progress, health, note, milestone)";
 
 interface RawRow {
   id: string;
@@ -57,7 +58,9 @@ interface RawRow {
   project_engineers: { profiles: RawProfile | null }[] | null;
   weekly_reports:
     | {
-        week: string;
+        id: string;
+        date: string;
+        created_at: string;
         progress: number;
         health: number;
         note: string | null;
@@ -106,8 +109,10 @@ export async function fetchProjetos(): Promise<ProjetosData> {
       .map(toEngenheiro)
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
     registros: (row.weekly_reports ?? [])
-      .map((r): RegistroSemanal => ({
-        semana: r.week,
+      .map((r): Registro => ({
+        id: r.id,
+        data: r.date,
+        criadoEm: r.created_at,
         progresso: r.progress,
         saude: r.health,
         nota: r.note ?? "",
@@ -115,7 +120,8 @@ export async function fetchProjetos(): Promise<ProjetosData> {
           ? { marco: MARCO_FROM_DB[r.milestone] }
           : {}),
       }))
-      .sort((a, b) => a.semana.localeCompare(b.semana)),
+      // Ordena por data e, no mesmo dia, pelo momento de criação.
+      .sort((a, b) => a.data.localeCompare(b.data) || a.criadoEm.localeCompare(b.criadoEm)),
   }));
 
   return { projetos };
@@ -175,32 +181,43 @@ export async function setEngenheiros(
   }
 }
 
-/** Cria/atualiza o registro de uma semana (PK `(project,week)` = edit-in-place). */
-export async function upsertRegistro(
+/** Payload (app → banco) de um registro. */
+function registroToRow(projetoId: string, r: RegistroInput) {
+  return {
+    project_id: projetoId,
+    date: r.data,
+    progress: r.progresso,
+    health: r.saude,
+    note: r.nota,
+    milestone: r.marco ? MARCO_TO_DB[r.marco] : null,
+  };
+}
+
+/** Cria um novo registro (data livre; vários por dia são permitidos). */
+export async function criarRegistro(
   projetoId: string,
-  registro: RegistroSemanal,
+  registro: RegistroInput,
 ): Promise<void> {
-  const { error } = await supabase.from("weekly_reports").upsert(
-    {
-      project_id: projetoId,
-      week: registro.semana,
-      progress: registro.progresso,
-      health: registro.saude,
-      note: registro.nota,
-      milestone: registro.marco ? MARCO_TO_DB[registro.marco] : null,
-    },
-    { onConflict: "project_id,week" },
-  );
+  const { error } = await supabase.from("weekly_reports").insert(registroToRow(projetoId, registro));
   if (error) throw new Error(error.message);
 }
 
-/** Remove um registro semanal. */
-export async function deleteRegistro(projetoId: string, semana: string): Promise<void> {
+/** Atualiza um registro existente pelo `id`. */
+export async function atualizarRegistro(
+  projetoId: string,
+  id: string,
+  registro: RegistroInput,
+): Promise<void> {
   const { error } = await supabase
     .from("weekly_reports")
-    .delete()
-    .eq("project_id", projetoId)
-    .eq("week", semana);
+    .update(registroToRow(projetoId, registro))
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Remove um registro pelo `id`. */
+export async function deleteRegistro(id: string): Promise<void> {
+  const { error } = await supabase.from("weekly_reports").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
