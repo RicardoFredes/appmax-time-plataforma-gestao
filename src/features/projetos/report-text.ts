@@ -1,51 +1,84 @@
-/** Geração do texto copiável do relatório + helper de cópia (com fallback no iframe). */
+/** Geração do relatório copiável (Markdown com tabelas) + helper de cópia (com fallback no iframe). */
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { STATUS_META, currentHealth, currentProgress, healthMeta, lastReport } from "./derive";
+import { STATUS_META, currentHealth, currentProgress, healthMeta, lastReport, priorityMeta } from "./derive";
 import { engineerNames } from "./ProjectRow";
 import type { DutyItem, Metrics } from "./report-metrics";
 import type { Section } from "./report-sections";
+import type { Project } from "./types";
+
+/** Sanitiza texto livre para caber numa célula de tabela Markdown (uma linha, sem `|`). */
+function cell(text: string): string {
+  return text.replace(/\r?\n+/g, " ").replace(/\|/g, "\\|").trim();
+}
+
+/** Ícone de saúde por faixa; projetos só com marcos (sem saúde) usam ✅ se concluídos, senão "—". */
+function healthCell(p: Project): string {
+  const h = currentHealth(p);
+  if (h === null) return p.status === "done" ? "✅" : "—";
+  const { level, label } = healthMeta(h);
+  const icon = level >= 4 ? "🟢" : level === 3 ? "🟡" : level === 2 ? "🟠" : "🔴";
+  return `${icon} ${label} (${level}/5)`;
+}
+
+function noteCell(p: Project): string {
+  const note = lastReport(p)?.note?.trim() || p.description || "—";
+  return cell(note);
+}
 
 export function buildReportText(
   sections: Section[],
   duty: DutyItem[],
   m: Metrics,
   date: string | null,
+  showEngineer: boolean,
+  showImportance: boolean,
 ): string {
-  const L: string[] = ["Relatório de projetos — Time Plataforma"];
-  if (date) L.push(`Atualizado em ${format(parseISO(date), "dd/MM/yyyy", { locale: ptBR })}`);
-  L.push("");
+  const L: string[] = ["# Relatório de Projetos — Time Plataforma", ""];
+  if (date) L.push(`_Atualizado em ${format(parseISO(date), "dd/MM/yyyy", { locale: ptBR })}_`, "");
 
-  L.push("Panorama (ponderado pela importância):");
-  L.push(`- Progresso ponderado: ${m.weightedProgress}%`);
-  L.push(`- Saúde ponderada: ${m.weightedHealth}/5`);
-  L.push(`- On-track: ${m.onTrack} · Atenção: ${m.warning} · Em risco: ${m.atRisk} · Vencidos: ${m.overdue}`);
-  L.push("");
+  L.push(
+    "## Panorama",
+    "",
+    "| Progresso ponderado | Saúde ponderada | On-track | Atenção | Em risco | Vencidos |",
+    "|---|---|---|---|---|---|",
+    `| ${m.weightedProgress}% | ${m.weightedHealth}/5 | ${m.onTrack} | ${m.warning} | ${m.atRisk} | ${m.overdue} |`,
+    "",
+  );
 
   if (duty.length) {
-    L.push("Sustentação esta semana:");
+    L.push("## Sustentação da semana", "", "| Grupo | Responsável |", "|---|---|");
     for (const d of duty) {
       const extra = d.uncovered
         ? " (sem cobertura)"
         : d.coveringFor
-          ? ` (cobrindo ${d.coveringFor})`
+          ? ` (cobrindo ${cell(d.coveringFor)})`
           : "";
-      L.push(`- ${d.scope}: ${d.name}${extra}`);
+      L.push(`| ${cell(d.scope)} | ${cell(d.name)}${extra} |`);
     }
     L.push("");
   }
 
+  L.push(
+    "## Projetos",
+    "",
+    "**Legenda de saúde:** 🟢 On tracking / No caminho · 🟡 Atenção · 🟠 Em risco · 🔴 Em perigo · ✅ Concluído",
+    "",
+  );
+
   for (const s of sections) {
-    L.push(`${s.text}:`);
+    const headers = ["Projeto"];
+    if (showEngineer) headers.push("Engenheiro");
+    if (showImportance) headers.push("Prioridade");
+    headers.push("%", "Status", "Saúde", "Observação");
+
+    L.push(`### ${s.text}`, "", `| ${headers.join(" | ")} |`, `|${headers.map(() => "---").join("|")}|`);
     for (const p of s.projects) {
-      const u = lastReport(p);
-      const note = u?.note?.trim() || p.description || "—";
-      const sa = currentHealth(p);
-      const onTrack = sa !== null ? ` · ${healthMeta(sa).label} (${healthMeta(sa).level}/5)` : "";
-      const resp = engineerNames(p);
-      L.push(
-        `  - [${p.code}] ${p.name} (${resp}) — ${currentProgress(p)}% · ${STATUS_META[p.status].label}${onTrack}: ${note}`,
-      );
+      const row = [`[${p.code}] ${cell(p.name)}`];
+      if (showEngineer) row.push(cell(engineerNames(p)));
+      if (showImportance) row.push(priorityMeta(p.priority).label);
+      row.push(`${currentProgress(p)}%`, STATUS_META[p.status].label, healthCell(p), noteCell(p));
+      L.push(`| ${row.join(" | ")} |`);
     }
     L.push("");
   }

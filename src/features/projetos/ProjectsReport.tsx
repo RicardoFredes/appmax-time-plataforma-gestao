@@ -48,8 +48,8 @@ export function ProjectsReport({
     [projects, grouping],
   );
   const text = useMemo(
-    () => buildReportText(sections, duty, metrics, stats.date),
-    [sections, duty, metrics, stats.date],
+    () => buildReportText(sections, duty, metrics, stats.date, showEngineer, showImportance),
+    [sections, duty, metrics, stats.date, showEngineer, showImportance],
   );
 
   const copy = async () => {
