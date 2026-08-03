@@ -44,6 +44,13 @@ export function normalizeConfig(raw: any): SyncConfig {
         escopo: g.escopo ?? "",
         inicio: g.inicio ?? "",
       })),
+      overrides: (sust.overrides ?? []).map((o: any) => ({
+        grupo: o.grupo,
+        email: o.email,
+        inicio: o.inicio,
+        fim: o.fim,
+        motivo: o.motivo ?? "",
+      })),
     },
   };
 }
@@ -53,6 +60,9 @@ export function normalizeConfig(raw: any): SyncConfig {
  * dos usuários) e do arquivo de férias. A ordem do rodízio segue a ordem dos
  * usuários no config, girada para começar no engenheiro `inicio` de cada grupo.
  * Cálculo puro (sem rede) — o frontend deriva a semana corrente do relógio dele.
+ *
+ * Os overrides (trocas pontuais de plantão) só têm o `name` resolvido aqui e são
+ * repassados: quem os aplica é o `schedule.ts`, no cliente.
  */
 export function buildSustentacao(
   cfg: SyncConfig,
@@ -78,11 +88,17 @@ export function buildSustentacao(
     fim: v.fim,
   }));
 
+  const overrides = cfg.sustentacao.overrides.map((o) => ({
+    ...o,
+    name: nameByEmail.get(o.email) ?? o.email,
+  }));
+
   return {
     anchorMonday: cfg.sustentacao.anchorMonday,
     semanasPorEngenheiro: cfg.sustentacao.semanasPorEngenheiro,
     grupos,
     ferias,
+    overrides,
   };
 }
 

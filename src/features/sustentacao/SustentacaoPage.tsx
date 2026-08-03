@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Palmtree, ShieldCheck } from "lucide-react";
+import { ArrowRightLeft, CalendarDays, Palmtree, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -81,20 +81,35 @@ function CurrentDuty({
           {slot.uncovered && (
             <Badge variant="destructive">sem cobertura</Badge>
           )}
+          {slot.override && (
+            <Badge variant="info" className="gap-1">
+              <ArrowRightLeft className="h-3 w-3" />
+              no lugar de {firstName(slot.override.replaced.name)}
+            </Badge>
+          )}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
             {fmtRange(slot.start, slot.end)}
           </span>
-          <span className="text-xs">
-            semana {group.weekInSlot} de {totalWeeks}
-          </span>
+          {/* "semana X de Y" só faz sentido no turno natural do rodízio. */}
+          {!slot.override && (
+            <span className="text-xs">
+              semana {group.weekInSlot} de {totalWeeks}
+            </span>
+          )}
         </div>
         {slot.coveringFor && (
           <p className="mt-2 text-xs text-muted-foreground">
             Turno original de <strong>{slot.coveringFor.name}</strong>, de férias no
             período.
+          </p>
+        )}
+        {slot.override && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Troca combinada no lugar de <strong>{slot.override.replaced.name}</strong>
+            {slot.override.motivo && ` — ${slot.override.motivo}`}.
           </p>
         )}
       </div>
@@ -120,6 +135,12 @@ function UpcomingRow({ slot, accent }: { slot: Slot; accent: string }) {
           {slot.uncovered && (
             <Badge variant="destructive" className="text-[10px]">
               sem cobertura
+            </Badge>
+          )}
+          {slot.override && (
+            <Badge variant="info" className="gap-1 text-[10px]">
+              <ArrowRightLeft className="h-2.5 w-2.5" />
+              no lugar de {firstName(slot.override.replaced.name)}
             </Badge>
           )}
         </div>
@@ -176,7 +197,7 @@ function GroupCard({
           </div>
           <ul className="divide-y">
             {group.upcoming.map((slot) => (
-              <UpcomingRow key={slot.index} slot={slot} accent={accent} />
+              <UpcomingRow key={slot.key} slot={slot} accent={accent} />
             ))}
           </ul>
         </div>

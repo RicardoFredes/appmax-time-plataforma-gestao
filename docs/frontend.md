@@ -85,10 +85,17 @@ certa mesmo com o JSON gerado dias antes.
 - **Férias**: se o turno do engenheiro-base sobrepõe uma ausência (`data.ferias`), o
   slot é coberto pelo **próximo disponível** do rodízio (`effective` ≠ `base`,
   `coveringFor` preenchido); se ninguém puder cobrir, `uncovered`.
+- **Overrides** (`data.overrides`, trocas pontuais do `config.json`): vencem rodízio e
+  cobertura. O slot é **partido** nos trechos do override (`splitSlot`) e o resto volta ao
+  plantão natural, então `current`/`upcoming` são **trechos**, não slots inteiros — daí o
+  `key` (o `index` repete) e o `override: { replaced, motivo }`. Trechos vizinhos do mesmo
+  override são fundidos (`mergeOverrides`), pois um override pode cruzar slots; trechos já
+  encerrados são descartados. Overrides sobrepostos: o que começa primeiro ganha.
 
 `SustentacaoPage.tsx` renderiza um card por grupo: responsável da semana em destaque
-(com badge "cobrindo …" quando é substituição) e a sequência dos próximos plantões. A
-lista de férias em si vive na aba **Férias** (abaixo).
+(com badge "cobrindo …" quando é substituição por férias e "no lugar de …" quando é
+override — aí o "semana X de Y" some, que só vale no turno natural) e a sequência dos
+próximos plantões. A lista de férias em si vive na aba **Férias** (abaixo).
 
 ## Férias — `src/features/ferias/FeriasPage.tsx`
 

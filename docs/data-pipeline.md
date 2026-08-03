@@ -42,7 +42,10 @@ urgência e **reconstrói a escala de sustentação** a partir de `config.json`/
   "sustentacao": {                                    // escala de plantão (ver abaixo)
     "anchorMonday": "2026-07-13",                     // segunda em que o `inicio` de cada grupo assume
     "semanasPorEngenheiro": 2,
-    "grupos": [ { "grupo": 1, "escopo": "...", "inicio": "<email>" } ]
+    "grupos": [ { "grupo": 1, "escopo": "...", "inicio": "<email>" } ],
+    "overrides": [                                    // trocas pontuais (vencem o rodízio)
+      { "grupo": 1, "email": "<email>", "inicio": "2026-08-03", "fim": "2026-08-20", "motivo": "..." }
+    ]
   }
 }
 ```
@@ -64,6 +67,13 @@ ao `inicio`; cada engenheiro cobre `semanasPorEngenheiro` semanas (segunda a dom
 está sempre certo independentemente de quando o JSON foi gerado. Se o engenheiro do turno
 estiver de férias sobrepondo o período, o plantão é coberto pelo próximo disponível do
 rodízio.
+
+**Trocas pontuais (`sustentacao.overrides`)**: cada entrada (`{ grupo, email, inicio, fim,
+motivo }`, datas inclusivas) **fixa** o plantão do grupo naquele período, vencendo o
+rodízio e a cobertura de férias. `buildSustentacao` só resolve o `name` pelo e-mail e
+repassa a lista; quem aplica é o `schedule.ts` (parte o turno nos trechos do override e
+devolve o resto do slot ao plantão natural). É um overlay manual, na mesma filosofia da
+urgência — apague a entrada quando o período passar.
 
 **Produção não cacheia a escala.** Como os dados vêm de arquivos estáticos do repo
 (empacotados no deploy), a Pages Function calcula `buildSustentacao` no bundle e **anexa
@@ -98,6 +108,8 @@ Definido em `src/features/tasks/types.ts` e **espelhado** em `sync/types.ts` —
 os dois em sincronia. `TasksData = { generatedAt, tasks[], users[], epics[], boards[],
 sustentacao }`. Cada `Task` traz `key, url, summary, description, board, projectKey,
 issueType, status, statusCategory, priority, assigneeName, assigneeEmail, epicKey,
-epicSummary, labels, created, updated, sources[], urgency`. `sustentacao = { anchorMonday,
-semanasPorEngenheiro, grupos[], ferias[] }`, com cada grupo `{ grupo, escopo,
-engenheiros[] }` (já na ordem do rodízio) e cada férias `{ email, name, inicio, fim }`.
+epicSummary, labels, created, updated, dueDate (due date do Jira, `null` sem prazo),
+sources[], urgency`. `sustentacao = { anchorMonday,
+semanasPorEngenheiro, grupos[], ferias[], overrides[] }`, com cada grupo `{ grupo, escopo,
+engenheiros[] }` (já na ordem do rodízio), cada férias `{ email, name, inicio, fim }` e
+cada override `{ grupo, email, name, inicio, fim, motivo }`.

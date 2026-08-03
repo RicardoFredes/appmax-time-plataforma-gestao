@@ -63,12 +63,26 @@ export interface Vacation {
   fim: string;
 }
 
+/**
+ * Plantão fixado à mão num período (datas YYYY-MM-DD, inclusivas), que **vence o
+ * rodízio** e a cobertura de férias. Serve para trocas pontuais.
+ */
+export interface DutyOverride {
+  grupo: number;
+  email: string;
+  name: string;
+  inicio: string;
+  fim: string;
+  motivo: string;
+}
+
 export interface SustentacaoData {
   /** Segunda-feira (YYYY-MM-DD) em que o 1º engenheiro de cada grupo assume. */
   anchorMonday: string;
   semanasPorEngenheiro: number;
   grupos: SustentacaoGroup[];
   ferias: Vacation[];
+  overrides: DutyOverride[];
 }
 
 export interface TasksData {
@@ -89,6 +103,8 @@ export interface SustentacaoConfig {
   anchorMonday: string;
   semanasPorEngenheiro: number;
   grupos: { grupo: number; escopo: string; inicio: string }[];
+  /** Trocas pontuais de plantão (sem o `name`, resolvido a partir de `users`). */
+  overrides: Omit<DutyOverride, "name">[];
 }
 
 export interface SyncConfig {

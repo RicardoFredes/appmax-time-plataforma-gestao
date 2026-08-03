@@ -71,6 +71,11 @@ one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm 
   escala). O rodízio segue a ordem dos `users` por grupo, girada para começar no `inicio`
   do grupo, ancorado em `sustentacao.anchorMonday` (semana atual = slot 0). Semanas
   começam na segunda. Férias sobrepondo um turno → coberto pelo próximo do rodízio.
+  **Trocas pontuais** = `sustentacao.overrides` no `config.json` (`{ grupo, email, inicio,
+  fim, motivo }`, datas inclusivas): overlay manual que **vence** rodízio e cobertura; o
+  `schedule.ts` parte o turno nos trechos do override e devolve o resto ao plantão natural
+  (por isso `current`/`upcoming` são trechos, com `key` próprio). Apague a entrada quando o
+  período passar.
 - Deploy: Cloudflare Pages, projeto `appmax-time-plataforma-tarefas`. O passo `wrangler
   pages deploy` é bloqueado no modo auto (exfiltração) — o usuário roda manualmente
   (`! pnpm exec wrangler pages deploy`).

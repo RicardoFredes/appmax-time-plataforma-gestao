@@ -72,6 +72,16 @@
     "grupos": [
       { "grupo": 1, "escopo": "Plataforma / Backoffice", "inicio": "felipe.carvalho@appmax.com.br" },
       { "grupo": 2, "escopo": "Aplicativo", "inicio": "ian.oliveira@appmax.com.br" }
+    ],
+    "$doc-overrides": "Trocas pontuais: fixam o plantão de um grupo num período (datas inclusivas), vencendo o rodízio e a cobertura de férias. O turno é partido: o resto do slot volta ao normal. Remova a entrada quando o período passar.",
+    "overrides": [
+      {
+        "grupo": 1,
+        "email": "bruno.schneider@appmax.com.br",
+        "inicio": "2026-08-03",
+        "fim": "2026-08-20",
+        "motivo": "assume até as férias dele, no lugar do Witerlland (que emendaria 4 semanas seguidas)"
+      }
     ]
   }
 }
