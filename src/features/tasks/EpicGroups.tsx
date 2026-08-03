@@ -86,7 +86,7 @@ function EpicHeaderRow({
 }) {
   return (
     <TableRow className="bg-muted/40 hover:bg-muted/60">
-      <TableCell colSpan={6} className="py-2">
+      <TableCell colSpan={7} className="py-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -165,6 +165,7 @@ export function EpicGroups({ tasks, epics, sort, onSort }: Props) {
               className="w-[160px]"
             />
             <TableHead className="w-[150px]">Board</TableHead>
+            <TableHead className="w-[120px]">Datas</TableHead>
             <SortHead
               label="Urgência"
               sortKey="urgency"

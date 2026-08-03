@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { statusBadgeStyle } from "./status";
+import { dueTone, shortDate } from "./dates";
 import { URGENCY_META } from "./urgency";
 import type { Task } from "./types";
 
@@ -81,6 +82,29 @@ function UrgencyBadge({ urgency }: { urgency: Task["urgency"] }) {
   );
 }
 
+/** Criação e prazo empilhados; o prazo fica em destaque quando venceu (ou está
+ * a ponto de vencer) numa tarefa que ainda não foi concluída. */
+function DatesCell({ task }: { task: Task }) {
+  const tone = dueTone(task);
+  return (
+    <div className="space-y-0.5 whitespace-nowrap text-xs text-muted-foreground">
+      <div>
+        <span className="opacity-70">Criada </span>
+        {shortDate(task.created)}
+      </div>
+      <div
+        className={cn(
+          tone === "overdue" && "font-medium text-rose-600 dark:text-rose-400",
+          tone === "soon" && "font-medium text-amber-600 dark:text-amber-400",
+        )}
+      >
+        <span className="opacity-70">Prazo </span>
+        {shortDate(task.dueDate)}
+      </div>
+    </div>
+  );
+}
+
 /** Colunas de uma linha de tarefa (compartilhadas entre a tabela plana e a
  * visão agrupada por épico). A coluna "Épico" só entra quando `showEpic`. */
 export function TaskRow({ task: t, showEpic }: { task: Task; showEpic: boolean }) {
@@ -116,6 +140,9 @@ export function TaskRow({ task: t, showEpic }: { task: Task; showEpic: boolean }
         </TableCell>
       )}
       <TableCell>
+        <DatesCell task={t} />
+      </TableCell>
+      <TableCell>
         <UrgencyBadge urgency={t.urgency} />
       </TableCell>
       <TableCell>
@@ -150,6 +177,7 @@ export function TasksTable({ tasks, showEpic, sort, onSort }: Props) {
             />
             <TableHead className="w-[150px]">Board</TableHead>
             {showEpic && <TableHead className="w-[160px]">Épico</TableHead>}
+            <TableHead className="w-[120px]">Datas</TableHead>
             <SortHead
               label="Urgência"
               sortKey="urgency"

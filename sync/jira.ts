@@ -35,6 +35,7 @@ const FIELDS = [
   "labels",
   "created",
   "updated",
+  "duedate",
 ];
 
 /** Extrai texto plano de um documento ADF (Atlassian Document Format). */
@@ -129,6 +130,7 @@ export class JiraClient {
       labels: Array.isArray(f.labels) ? f.labels : [],
       created: f.created ?? "",
       updated: f.updated ?? "",
+      dueDate: f.duedate ?? null,
       sources,
       urgency: null,
     };

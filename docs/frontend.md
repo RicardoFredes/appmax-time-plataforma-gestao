@@ -30,6 +30,9 @@ facets + lista filtrada/ordenada.
 - **Épicos nunca são listados como linha** em nenhuma aba (`isEpic(issueType)` em
   `issue.ts` os exclui da base) — na aba Épicos eles são só o cabeçalho do grupo.
 - Ícone do tipo (`IssueTypeIcon`): épico (roxo, `Zap`) x bug (vermelho) x task (azul).
+- Coluna **Datas** (`dates.ts`, nas duas tabelas): criação e prazo (`dueDate`, o due
+  date do Jira) empilhados, formato `dd MMM yy`; sem prazo mostra "—". O prazo fica
+  em rosa quando venceu e em âmbar quando vence em ≤ 2 dias — concluídas nunca alarmam.
 
 ### Regra base (aplicada nas duas abas)
 - Mostra **apenas não-atribuídas ou pessoas do time**. "Não atribuída" é detectada

@@ -30,6 +30,8 @@ export interface Task {
   labels: string[];
   created: string;
   updated: string;
+  /** Due date do Jira (YYYY-MM-DD); `null` quando a tarefa não tem prazo. */
+  dueDate: string | null;
   sources: TaskSource[];
   urgency: Urgency | null;
 }

@@ -52,6 +52,7 @@ function mapNode(node: any, source: TaskSource): Task {
     labels: Array.isArray(f.labels) ? f.labels : [],
     created: f.created ?? "",
     updated: f.updated ?? "",
+    dueDate: f.duedate ?? null,
     sources: [source],
     urgency: null,
   };
