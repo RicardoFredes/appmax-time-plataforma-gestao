@@ -1,19 +1,23 @@
 # Frontend
 
-React + Vite. Entrada `src/main.tsx` → `src/App.tsx`. Três abas navegadas por **hash**
-(`#/sustentacao`, `#/ferias`; o resto cai em Tarefas) — sem lib de router.
+React + Vite. Entrada `src/main.tsx` → `src/App.tsx`. Abas navegadas por **hash**
+(`#/onboarding`, `#/tarefas`, `#/projetos`, `#/sustentacao`, `#/ferias`), sem lib de
+router. A **raiz** `#/` é o Onboarding, e o que não casa cai nele.
 
 ## App shell — `src/App.tsx`
 
 - Carrega `public/data/tasks.json` (ou `/api/tasks`) via `hooks/useTasksData.ts`
   (estados loading/error/ready; erro instrui a rodar `pnpm sync`). O mesmo `TasksData`
   alimenta as duas abas.
-- `TopNav` (logo + abas **Tarefas**/**Sustentação**/**Férias**) fixo no topo; a aba vem
-  do hash e é linkável/sobrevive ao reload.
+- `TopNav` (logo + abas **Onboarding**/**Tarefas**/**Projetos**/**Sustentação**/**Férias**)
+  fixo no topo; a aba vem do hash e é linkável/sobrevive ao reload. Onboarding vem
+  primeiro por ser a raiz: quem abre o painel sem rota cai nele.
 - Aba **Tarefas**: header com 4 cards de métrica — **Tarefas**, **Sem responsável**
   (tarefas com `assigneeName === "Não atribuída"`), **Boards**, **Épicos** — + o painel.
 - Aba **Sustentação**: `SustentacaoPage` (ver abaixo), lê `data.sustentacao`.
 - Aba **Férias**: `FeriasPage` (ver abaixo), lê `data.sustentacao.ferias`.
+- Aba **Onboarding**: `OnboardingPage` (ver abaixo). É a única que **não** lê o `TasksData`.
+  Renderiza antes do gate de loading/erro, então funciona mesmo com o `tasks.json` fora.
 
 ## Painel — `src/features/tasks/TasksPanel.tsx`
 
@@ -118,6 +122,51 @@ lanes. `STATUS_ORDER` define a ordem lógica.
 
 `URGENCY_META` (label, cor, rank) para os três níveis. Valores vêm do overlay do sync
 (`sync/urgency.json`).
+
+## Onboarding: `src/features/onboarding/`
+
+Página estática de boas-vindas ao time. Serve pra quem acabou de entrar: quem é quem, o
+que cada repositório faz, quais contextos sustentamos, qual é a stack e onde ficam as
+ferramentas.
+
+**Todo o conteúdo é hardcoded**: não passa por Jira, Supabase nem pelo `sync`. É
+documentação versionada, e editar é o fluxo normal de atualização:
+
+| Arquivo | O que guarda |
+|---|---|
+| `team.ts` | Pessoas, trilhas, cargos e skills. A lista **espelha** `sync/config.json`. |
+| `repos.ts` | Repositórios agrupados (Appmax / Max / plataforma compartilhada), com remote e stack. |
+| `contexts.ts` | Contextos com N1/N2, vindos da planilha de domínios. |
+| `stack.ts` | Tecnologias por categoria + `QUICK_LINKS` (ferramentas externas) + `PANEL_LINKS` (abas do painel). Exporta `chipFor()`, usado pelas outras seções. |
+
+UI: `OnboardingPage` é o shell, com hero fixo no topo, **menu lateral** e **uma seção
+por vez** (o conteúdo é longo demais pra uma página corrida). Cada seção mora num arquivo:
+`TeamSection` (cards ⇄ organograma), `ReposSection` (**tabela** por grupo, com filtro por
+texto), `ContextsSection`, `StackSection` (que também exporta `LinksSection`). Átomos
+comuns (`Avatar`, `Section`, `GroupHeading`, `RichText`, `StackChip`) em `parts.tsx`.
+
+A seção aberta é **sub-rota** (`#/onboarding/<seção>`, default `time`), lida por
+`useSectionRoute`, mesmo padrão do detalhe de projeto em `ProjectsPage`. `App.tsx` casa
+a aba pelo primeiro segmento do hash, então a sub-rota não interfere. Em telas estreitas
+o menu vira uma faixa horizontal rolável.
+
+Como esta é a **rota raiz**, `#/` e `#/onboarding` levam ao mesmo lugar (seção `time`).
+Navegar pra aba, porém, escreve sempre `#/onboarding`: o backoffice espelha o hash no
+path dele (`/time-plataforma/<rota>`) e, sem o segmento, o item do menu não consegue
+ficar ativo enquanto se navega pelas seções.
+
+Detalhes que não são óbvios:
+
+- **Cargo/skills não existem no `config.json`**, só aqui. Adicionar alguém ao time é
+  editar os dois arquivos.
+- **Skills ficam escondidas por padrão** (toggle "Skills" na seção O time): os chips
+  competiam com o que o card existe pra responder, que é quem é a pessoa.
+- **N1/N2 não precisa estar em `MEMBERS`**: contexto compartilhado pode ter dono de outro
+  time (ex.: o Site). Nesses casos o nome é derivado do e-mail.
+- **Avatares são iniciais**, com cor derivada de um hash do e-mail (`accentFor`): a cor
+  de cada pessoa não muda quando alguém entra ou sai. Os únicos binários são logos:
+  tecnologias em `public/img/stack/`, ferramentas em `public/img/tools/`. Logo
+  monocromático escuro (GitHub) usa `mono: true` no `QuickLink` pra inverter no dark.
 
 ## UI base
 

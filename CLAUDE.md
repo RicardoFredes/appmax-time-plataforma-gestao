@@ -52,9 +52,18 @@ one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm 
   pela saúde), `Gauge` (SVG, medidor semicircular do on-tracking 1–5). `projetos.json` permanece
   **só como fonte do seed** (`pnpm seed:projetos`), não é mais importado pela app. **Nenhum
   arquivo do app passa de ~300 linhas.**
+- `src/features/onboarding/`: aba **Onboarding**, página estática de boas-vindas ao time
+  (quem é quem + organograma, repositórios, contextos com N1/N2, stack e links). **100%
+  hardcoded** e sem rede: dados em `team.ts`/`repos.ts`/`contexts.ts`/`stack.ts`, UI em
+  `OnboardingPage` (shell: hero + menu lateral, **uma seção por vez**, sub-rota
+  `#/onboarding/<seção>`) e uma seção por arquivo (`TeamSection`, `ReposSection`,
+  `ContextsSection`, `StackSection`, que também exporta `LinksSection`); átomos em
+  `parts.tsx`. Logos em `public/img/stack/` (tecnologias) e `public/img/tools/` (ferramentas).
 - `src/components/ui/` — shadcn copiado do backoffice. `src/App.tsx` — nav por hash
-  (`#/projetos`, `#/sustentacao`, `#/ferias`) entre as abas Tarefas/Projetos/Sustentação/Férias;
-  header da aba Tarefas.
+  (`#/onboarding`, `#/tarefas`, `#/projetos`, `#/sustentacao`, `#/ferias`) entre as abas
+  Onboarding/Tarefas/Projetos/Sustentação/Férias; header da aba Tarefas. A **raiz** `#/`
+  cai no Onboarding, mas navegar pra ele escreve o canônico `#/onboarding` (o backoffice
+  espelha o hash no path e precisa do segmento pra destacar o item do menu).
 - Gerado e gitignored: `public/data/tasks.json` (regenere com `pnpm sync`).
 
 ## Convenções e gotchas
@@ -133,6 +142,12 @@ one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm 
   barra de distribuição on-tracking), a sustentação da semana (via `scheduleForAll`, dado
   passado por prop do `App`) e a linha por projeto (`ProjectRow`) com status/on-tracking/% e a
   nota mais recente. O texto de "Copiar relatório" acompanha o agrupamento selecionado.
+- **Onboarding**: conteúdo editorial versionado, não gerado. A lista de pessoas em
+  `onboarding/team.ts` **espelha** `sync/config.json` (mexeu num, mexa no outro); cargo e
+  skills só existem no `team.ts` (e ficam **escondidas por padrão**, atrás de um toggle).
+  Os contextos vêm da planilha "Domínios e contextos" e o N1/N2 **pode ser de outro time**
+  (o nome então é derivado do e-mail). A aba renderiza **fora** do gate de loading do
+  `tasks.json` (não depende dele).
 - Tema **Appmax** (roxo `#9b6afa`) em `src/styles/globals.css`; logo em
   `src/components/logo.tsx` (copiados de `appmax-app-frontend`).
 - Ao passar `"$VAR:sufixo"` no zsh, escape com `"${VAR}:sufixo"` (`:a` é modificador).

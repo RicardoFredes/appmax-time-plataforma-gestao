@@ -25,7 +25,7 @@ const BACKOFFICE_SOURCE = "appmax-backoffice";
  */
 export const EXTERNAL_NAV_EVENT = "panel:external-navigate";
 
-/** Rota atual: hash sem o prefixo `#/` (Tarefas = ""). */
+/** Rota atual: hash sem o prefixo `#/` (a raiz, Onboarding, é ""). */
 function currentPath(): string {
   return window.location.hash.replace(/^#\/?/, "");
 }

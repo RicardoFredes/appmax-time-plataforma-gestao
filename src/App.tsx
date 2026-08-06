@@ -11,20 +11,35 @@ import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { SustentacaoPage } from "@/features/sustentacao/SustentacaoPage";
 import { FeriasPage } from "@/features/ferias/FeriasPage";
 import { ProjectsPage } from "@/features/projetos/ProjectsPage";
+import { OnboardingPage } from "@/features/onboarding/OnboardingPage";
 import { BACKOFFICE_PANEL_URL, checkEmbed, showsChrome } from "@/lib/embed";
 import { initRouteSync } from "@/lib/route-sync";
 import type { TasksData } from "@/features/tasks/types";
 
-type Page = "tarefas" | "projetos" | "sustentacao" | "ferias";
+type Page = "tarefas" | "projetos" | "sustentacao" | "ferias" | "onboarding";
 
-/** Página atual a partir do hash da URL (linkável, sobrevive ao reload). */
+/**
+ * Página atual a partir do hash da URL (linkável, sobrevive ao reload).
+ *
+ * A **raiz** é o Onboarding: hash vazio (ou qualquer coisa que não casa) cai na
+ * página de boas-vindas. Navegar pra ela, porém, escreve a forma **canônica**
+ * `#/onboarding`, e não a raiz: o backoffice espelha o hash no path dele
+ * (`/time-plataforma/<rota>`), e sem o segmento não dá pra destacar o item do
+ * menu quando se está numa seção (`#/onboarding/<seção>`).
+ */
+const ROOT_PAGE: Page = "onboarding";
+
 function usePage(): [Page, (p: Page) => void] {
   const read = (): Page => {
     const h = window.location.hash.replace(/^#\/?/, "");
     const seg = h.split("/")[0];
-    return seg === "projetos" || seg === "sustentacao" || seg === "ferias"
+    return seg === "tarefas" ||
+      seg === "projetos" ||
+      seg === "sustentacao" ||
+      seg === "ferias" ||
+      seg === "onboarding"
       ? seg
-      : "tarefas";
+      : ROOT_PAGE;
   };
   const [page, setPage] = useState<Page>(read);
   useEffect(() => {
@@ -33,7 +48,7 @@ function usePage(): [Page, (p: Page) => void] {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
   const navigate = (p: Page) => {
-    window.location.hash = p === "tarefas" ? "" : `/${p}`;
+    window.location.hash = `/${p}`;
     setPage(p);
   };
   return [page, navigate];
@@ -50,6 +65,7 @@ function TopNav({ page, onNavigate }: { page: Page; onNavigate: (p: Page) => voi
       </div>
       <Tabs value={page} onValueChange={(v) => onNavigate(v as Page)}>
         <TabsList>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
           <TabsTrigger value="projetos">Projetos</TabsTrigger>
           <TabsTrigger value="sustentacao">Sustentação</TabsTrigger>
@@ -201,9 +217,14 @@ export function App() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
       {chrome && <TopNav page={page} onNavigate={navigate} />}
-      {state.status === "loading" && <LoadingState />}
-      {state.status === "error" && <ErrorState error={state.error} />}
-      {state.status === "ready" &&
+      {/* Onboarding é estático: não espera (nem depende de) o tasks.json. */}
+      {page === "onboarding" && <OnboardingPage />}
+      {page !== "onboarding" && state.status === "loading" && <LoadingState />}
+      {page !== "onboarding" && state.status === "error" && (
+        <ErrorState error={state.error} />
+      )}
+      {page !== "onboarding" &&
+        state.status === "ready" &&
         (page === "projetos" ? (
           <ProjectsPage sustentacao={state.data.sustentacao} />
         ) : page === "sustentacao" ? (
