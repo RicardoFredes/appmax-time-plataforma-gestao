@@ -24,7 +24,7 @@ function OwnerRow({ level, email }: { level: "N1" | "N2"; email?: string }) {
       </span>
       {name && email ? (
         <>
-          <Avatar name={name} seed={email} size="sm" />
+          <Avatar name={name} seed={email} src={member?.avatar} size="sm" />
           <span className="min-w-0 flex-1 truncate capitalize">{name}</span>
         </>
       ) : (

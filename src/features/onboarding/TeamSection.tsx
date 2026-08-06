@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Code2, GitBranch, LayoutGrid, Network, ShieldCheck, Sparkles } from "lucide-react";
+import { Code2, GitBranch, LayoutGrid, Network, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,6 @@ import { MEMBERS, TEAM_MISSION, TRACKS, displayName } from "./team";
 import { chipFor } from "./stack";
 import type { Member } from "./types";
 
-function DutyBadge({ group }: { group: number }) {
-  if (group < 0) return null;
-  return (
-    <Badge variant="info" className="gap-1">
-      <ShieldCheck className="h-3 w-3" />
-      Plantão G{group}
-    </Badge>
-  );
-}
-
 function MemberCard({
   member,
   showSkills,
@@ -27,11 +17,11 @@ function MemberCard({
   member: Member;
   showSkills: boolean;
 }) {
-  const hasFooter = member.dutyGroup >= 0 || (showSkills && member.skills.length > 0);
+  const showFooter = showSkills && member.skills.length > 0;
   return (
     <Card className="flex flex-col gap-3 p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={member.name} seed={member.email} size="lg" />
+        <Avatar name={member.name} seed={member.email} src={member.avatar} size="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-semibold leading-tight">{displayName(member)}</span>
@@ -59,14 +49,12 @@ function MemberCard({
         </div>
       </div>
 
-      {hasFooter && (
+      {showFooter && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <DutyBadge group={member.dutyGroup} />
-          {showSkills &&
-            member.skills.map((id) => {
-              const s = chipFor(id);
-              return <StackChip key={id} label={s.label} logo={s.logo} />;
-            })}
+          {member.skills.map((id) => {
+            const s = chipFor(id);
+            return <StackChip key={id} label={s.label} logo={s.logo} />;
+          })}
         </div>
       )}
     </Card>
@@ -85,6 +73,7 @@ function OrgNode({ member, lead = false }: { member: Member; lead?: boolean }) {
       <Avatar
         name={member.name}
         seed={member.email}
+        src={member.avatar}
         size={lead ? "md" : "sm"}
       />
       <div className="min-w-0">

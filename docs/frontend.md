@@ -163,10 +163,14 @@ Detalhes que não são óbvios:
   competiam com o que o card existe pra responder, que é quem é a pessoa.
 - **N1/N2 não precisa estar em `MEMBERS`**: contexto compartilhado pode ter dono de outro
   time (ex.: o Site). Nesses casos o nome é derivado do e-mail.
-- **Avatares são iniciais**, com cor derivada de um hash do e-mail (`accentFor`): a cor
-  de cada pessoa não muda quando alguém entra ou sai. Os únicos binários são logos:
-  tecnologias em `public/img/stack/`, ferramentas em `public/img/tools/`. Logo
-  monocromático escuro (GitHub) usa `mono: true` no `QuickLink` pra inverter no dark.
+- **Avatar é foto quando existe, iniciais quando não.** A foto vem do campo `avatar` do
+  `Member` (arquivo em `public/img/avatar/<login>.jpg`, 128px); sem ela, o `Avatar` cai
+  nas iniciais com cor derivada de um hash do e-mail (`accentFor`), estável quando alguém
+  entra ou sai. Quem acaba de entrar não tem foto, então as iniciais são estado normal e
+  não erro. Os contextos reaproveitam a foto quando o N1/N2 está em `MEMBERS`.
+- **Binários do repo**: fotos em `public/img/avatar/`, logos de tecnologia em
+  `public/img/stack/` e de ferramenta em `public/img/tools/`. Logo monocromático escuro
+  (GitHub) usa `mono: true` no `QuickLink` pra inverter no dark.
 
 ## UI base
 

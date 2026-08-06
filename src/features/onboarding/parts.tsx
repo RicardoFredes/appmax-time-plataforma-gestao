@@ -24,19 +24,39 @@ export function accentFor(seed: string): string {
   return PALETTE[Math.abs(hash) % PALETTE.length];
 }
 
+/**
+ * Foto da pessoa quando existe; senão, iniciais no círculo colorido. Quem entra
+ * no time começa sem foto, então as iniciais não são fallback de erro: são o
+ * estado normal até alguém adicionar a imagem em `public/img/avatar/`.
+ */
 export function Avatar({
   name,
   seed,
+  src,
   size = "md",
   className,
 }: {
   name: string;
   seed: string;
+  src?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
   const dims =
     size === "lg" ? "h-16 w-16 text-lg" : size === "sm" ? "h-7 w-7 text-[10px]" : "h-10 w-10 text-xs";
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        className={cn("shrink-0 rounded-full object-cover", dims, className)}
+      />
+    );
+  }
+
   return (
     <div
       className={cn(

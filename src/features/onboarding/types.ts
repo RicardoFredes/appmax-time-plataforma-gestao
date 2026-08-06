@@ -17,13 +17,13 @@ export interface Member {
   name: string;
   /** Como a pessoa é chamada no dia a dia, quando difere do nome. */
   nickname?: string;
+  /** Foto em `public/img/avatar/`; sem ela, a UI cai nas iniciais. */
+  avatar?: string;
   track: string;
   /** Cargo formal; `undefined` quando ainda não foi definido/validado. */
   position?: string;
   /** Skills declaradas, da mais forte pra mais fraca. */
   skills: string[];
-  /** Grupo de sustentação (espelha `sustentacao_grupo` do `config.json`). */
-  dutyGroup: number;
   /** Entrou há pouco: ganha destaque de "novo no time". */
   isNew?: boolean;
 }
