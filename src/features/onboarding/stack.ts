@@ -178,6 +178,12 @@ export const QUICK_LINKS: QuickLink[] = [
     logo: "/img/tools/bitbucket.svg",
   },
   {
+    label: "GitLab",
+    description: "Instância self-hosted da plataforma, em gitlab.platform.appmax.io.",
+    url: "https://gitlab.platform.appmax.io/",
+    logo: "/img/tools/gitlab.svg",
+  },
+  {
     label: "GitHub",
     description: "Organização appmaxbrasil. Hoje só a Central de Ajuda.",
     url: "https://github.com/appmaxbrasil",
