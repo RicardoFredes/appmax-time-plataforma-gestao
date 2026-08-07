@@ -58,6 +58,7 @@ export const MEMBERS: Member[] = [
   {
     email: "paulo.araujo@appmax.com.br",
     name: "Paulo Felipe de Araujo",
+    avatar: "/img/avatar/paulo.araujo.jpg",
     track: "fullstack",
     position: "Software Engineer V",
     skills: [],
