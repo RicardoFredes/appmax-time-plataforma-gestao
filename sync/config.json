@@ -71,7 +71,11 @@
       "sustentacao_grupo": 1
     }
   ],
-  "epics": ["SUS-4815", "SUS-1336", "SUS-4623"],
+  "epics": [
+    "SUS-4815", "SUS-1336", "SUS-4623", "SUS-4814",
+    "TIPL-146", "TIPL-223", "TIPL-212", "TIPL-179", "TIPL-121", "TIPL-172", "TIPL-143", "TIPL-125", "TIPL-57",
+    "LCM-698", "LCM-597", "LCM-594", "LCM-78"
+  ],
   "sustentacao": {
     "$doc": "Escala de sustentação. `anchorMonday` é a segunda-feira em que o `inicio` de cada grupo assume; cada engenheiro cobre `semanasPorEngenheiro` semanas seguidas. A ordem do rodízio segue a ordem dos usuários em `users` (por grupo), girada para começar no `inicio`. Grupo -1 não entra na escala. Férias em sync/vacations.json.",
     "anchorMonday": "2026-07-13",
