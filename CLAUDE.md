@@ -14,10 +14,17 @@ React 18 + Vite 5 + TS · Tailwind **v4** (`@tailwindcss/vite`, tema em
 `@`→`src` · pnpm (Node 22) · sync em tsx · deploy Cloudflare Pages (Function + KV).
 
 ## Comandos
-`pnpm dev` · `pnpm build` · `pnpm typecheck` · `pnpm sync` (Jira→JSON, precisa `.env`) ·
+`pnpm dev` · `pnpm build` · `pnpm typecheck` · `pnpm sync` (Jira→JSON, credenciais em `~/Projects/.config/ctx/appmax/atlassian.env`) ·
 `pnpm sync:export` (sem rede: reaplica o overlay de urgência **e** reconstrói a escala
 de sustentação a partir de `config.json`/`vacations.json`) · `pnpm seed:projetos` (seed
 one-off do `projetos.json`→Supabase, precisa service_role no `.env`) · `pnpm run deploy`.
+
+## Jira, Confluence e Bitbucket (`atl`)
+CLI local: `ATL=~/Projects/fredes/skills/plugins/atlassian/skills/atlassian/scripts/atl`. Usa as
+mesmas credenciais do `pnpm sync` (`~/Projects/.config/ctx/appmax/atlassian.env`); nunca ler o arquivo
+nem imprimir token, `$ATL ctx` mostra as chaves mascaradas. Ex.: `$ATL jira get PRT-76`,
+`$ATL jira search "project = PRT AND status = 'In Progress'"`, `$ATL conf search "termo"`. Escrita
+(mover status, comentar) só com pedido. Referência no `SKILL.md` ao lado do script.
 
 ## Mapa
 - `sync/` — pipeline de dados. `config.json` (time + épicos + bloco `sustentacao`),

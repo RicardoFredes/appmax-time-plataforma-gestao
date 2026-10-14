@@ -45,7 +45,7 @@ Mesma do `../../appmax/max-backoffice-frontend`:
 | `pnpm dev` | Vite dev server (http://localhost:5173) |
 | `pnpm build` | `tsc -b && vite build` → `dist/` |
 | `pnpm typecheck` | `tsc -b --noEmit` |
-| `pnpm sync` | Jira → `tasks.json` (precisa `.env`) |
+| `pnpm sync` | Jira → `tasks.json` (credenciais em `~/Projects/.config/ctx/appmax/atlassian.env`) |
 | `pnpm sync:export` | Sem rede: reaplica urgência + reconstrói a escala de sustentação |
 | `pnpm run deploy` | build + `wrangler pages deploy` |
 | `pnpm run deploy:create` | Cria o projeto Pages `gestor` (1x) |

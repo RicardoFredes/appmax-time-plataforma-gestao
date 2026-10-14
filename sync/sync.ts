@@ -10,6 +10,7 @@
  * divergem. Fonte de dados do frontend: public/data/tasks.json.
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { credsFromEnv } from "./jira.ts";
@@ -24,18 +25,26 @@ const CONFIG_FILE = path.resolve(__dirname, "config.json");
 const URGENCY_FILE = path.resolve(__dirname, "urgency.json");
 const VACATIONS_FILE = path.resolve(__dirname, "vacations.json");
 
-/** Carrega variáveis do `.env` na raiz (parser mínimo, sem dependência externa). */
+/** Credenciais do Jira no contexto compartilhado (fora do repo), usado também pela CLI `atl`. */
+const CTX_ENV = path.join(
+  process.env.CTX_HOME || path.join(os.homedir(), "Projects/.config/ctx"),
+  process.env.CTX || "appmax",
+  "atlassian.env",
+);
+
+/** Carrega o `.env` da raiz e depois o contexto; quem vem antes vence (parser mínimo, sem dependência externa). */
 function loadEnvFile(): void {
-  const envPath = path.resolve(ROOT, ".env");
-  if (!fs.existsSync(envPath)) return;
-  for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-    if (!(key in process.env)) process.env[key] = val;
+  for (const envPath of [path.resolve(ROOT, ".env"), CTX_ENV]) {
+    if (!fs.existsSync(envPath)) continue;
+    for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+      if (!(key in process.env)) process.env[key] = val;
+    }
   }
 }
 

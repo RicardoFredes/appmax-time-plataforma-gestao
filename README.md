@@ -43,7 +43,7 @@ dev:cf` (`wrangler pages dev`).
 
    ```bash
    cp .env.sample .env
-   # preencha JIRA_EMAIL/JIRA_API_TOKEN e as chaves do Supabase (VITE_SUPABASE_*)
+   # preencha as chaves do Supabase (VITE_SUPABASE_*); Jira vem de ~/Projects/.config/ctx/appmax/atlassian.env
    ```
 
 3. Ajuste `sync/config.json` (quem e quais épicos acompanhar):
@@ -111,7 +111,7 @@ sync/
   urgency.json       # urgência manual por tarefa (key -> alta|media|baixa)
   apply-urgency.ts   # overlay de urgência aplicado no export
   types.ts           # contrato de dados (espelha src/features/tasks/types.ts)
-  jira.ts            # cliente REST do Jira (Basic Auth via .env)
+  jira.ts            # cliente REST do Jira (Basic Auth; credenciais do contexto ~/Projects/.config/ctx)
   core.ts            # buildTasksData: Jira → TasksData em memória (compartilhado)
   sync.ts            # CLI: buildTasksData → public/data/tasks.json
   seed-from-mcp.ts   # seed inicial a partir de dumps do MCP (one-off, sem token)
